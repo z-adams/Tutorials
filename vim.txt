@@ -1,0 +1,94 @@
+
+Highly recommend two things:
+1. Do the vim tutorial (type "vimtutor" at the command line without quotes)
+2. Alternatively, play this game: https://vim-adventures.com/
+
+VIMRC: Place the following lines in your vimrc file, which should live at ~/.vimrc
+
+filetype plugin indent on
+" show existing tab with r spaces width
+set tabstop=4
+" delete tabs embedded in line
+set softtabstop=4
+" when indenting use '>', use 4 spaces width
+set shiftwidth=4
+" On pressing tab, insert 4 spaces
+set expandtab
+"set smarttab
+" On startup, display line numbers
+set number
+" Display command being entered
+set showcmd
+
+COMMANDS: Sorted roughly by importance, but if a command has an opposite or
+similar group or pair, I'll put them together even if one is less useful.
+* indicates degree of usefulness
+
+NAVIGATION:
+hjlk - move cursor***
+Ctrl-E - scroll page down**
+Ctrl-Y - scroll page up**
+Ctrl-F - jump page Forward one screen (pgdn)**
+Ctrl-B - jump page Back one screen (pgup)**
+w - jump cursor to next word**
+W - jump cursor to next word (whitespace breaks only)**
+b - jump cursor back to last word
+B - jump cursor back to last word (whitespace breaks only)*
+<number>G - e.g. 14G - "Go" to the specified line number
+
+i - insert mode***
+I - insert mode at start of line**
+A - append to end of line (insert mode, jump to end of line)***
+o - insert mode on new line, below current**
+O - insert mode on new line, above current*
+
+:vsplit <filename> - split the screen vertically with another file***
+:split <filename> - split the screen horizontally with another file***
+ctrl-w-w - cycle the cursor from screen to screen***
+ctrl-w-<hjkl> - move the cursor to the window in the direction pressed**
+
+:w - write (save)**
+:q - quit**
+:wq - write then quit***
+:!q - force quit (without saving)*
+
+yy - yank line (copy)**
+yw - yank word
+p - put (paste) after cursor
+P - put (paste) before cursor
+
+u - undo**
+ctrl-r - redo**
+
+MISC. LESS COMMON:
+cw - change word: delete a word and enter insert mode to replace it
+C - delete everything from the cursor to the end of line and enter insert mode
+x - delete current character
+s - delete current character and go to 
+dd - delete line
+dw - delete word
+in general: d< > deletes until wherever the cursor would end up from normally
+    using that command. E.g. $ jumps to the end of the line, so d$ deletes
+    everything from the current cursor up until the end of the line (equivalent
+    to 'C' command). The same applies to "yank": yG yanks everything from the
+    current position to the end of the file (good for copying whole files).
+
+v - enter 'visual' mode (selecting lines to delete or copy, etc)
+% - jump to the other end of a parenthesis pair
+^ - jump to first non-whitespace character in line
+/<word> - search for a word
+* - search for the current word under the cursor
+n - jump to next word in search
+N - jump to previous word in search
+gg - jump to the first line of the file*
+G - jump to the last line of the file*
+H - "Home" jump to the top of the current screen
+L - "Last" jump to the last line of the current screen
+M - "Middle" jump to the middle of the screen
+:%s/<find>/<replace>/g - :% (apply to entire file), search for and replace
+    <find> with <replace> and replace all instances on each line (g).
+    Google "vim find and replace" for more info
+:!xxd - overwrite (!) the file with the output of the xxd program (hex dump)
+
+
+

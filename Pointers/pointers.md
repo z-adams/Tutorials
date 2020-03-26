@@ -657,7 +657,7 @@ Let's say that `marker` and subsequently the `left_off` argument local to
 `find_char()` is currently pointing at the first 'o'. Here is what happens
 when `left_off` is dereferenced once within `find_char()`:
 
-![fig11](diagrams/fig11.svg)
+<img src="https://github.com/z-adams/TestCurriculum/blob/master/Pointers/diagrams/fig11.svg" align="center">
 
 Notice how dereferencing `left_off` leads us to `marker`, which is still a
 pointer.

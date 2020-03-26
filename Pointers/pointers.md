@@ -40,7 +40,7 @@ When we compile and run our program, the values of `a`, `b`, and `c` need to
 be kept track of somewhere, and that somewhere is in memory.
 Here is what memory looks like when our program executes:
 
-![fig1](/figures/fig1.svg)
+![fig1](/diagrams/fig1.svg)
 
 At first, we have simply initialized our values, and then we perform an addition
 to change the value of `c`.
@@ -79,7 +79,7 @@ We of course already know what the address of `c` is from last time, it is `8`.
 So the pointer `int* p = &c` will contain the value `8`. Here's what our memory
 looks like now:
 
-![fig2](/figures/fig2.svg)
+![fig2](/diagrams/fig2.svg)
 
 We see that `p`, far from being something strange, is simply an integer. The
 only strange thing about it is that it stores the address of another piece of
@@ -160,7 +160,7 @@ int main()
 
 and the resulting memory:
 
-![fig3](/figures/fig3.svg)
+![fig3](/diagrams/fig3.svg)
 
 We can see that the `malloc()`'d data still exists in the heap, but since we
 reassigned our pointer to the address of `c`, we no longer are able to find it!
@@ -198,15 +198,15 @@ same goes for arrays: if we wish to create an array on the stack, we simply
 declare it with
 
 ```c
-    int my_array[10];
+int my_array[10];
 ```
 
 and we have an array of 10 integers, named `my_array`. But what if we want to
 create an array at runtime, depending on, say, user input?
 
 ```c
-    int user_input = 5;  // pretend this came from the user
-    int my_array[user_input];   // compiler error!
+int user_input = 5;  // pretend this came from the user
+int my_array[user_input];   // compiler error!
 ```
 
 This is not allowed, because the executable cannot possibly know how much
@@ -216,8 +216,8 @@ dynamic arrays. Instead, we will create our array on the heap, and refer
 to it with a pointer:
 
 ```c
-    int user_input = 5;
-    int* my_array = malloc(user_input * sizeof(int));
+int user_input = 5;
+int* my_array = malloc(user_input * sizeof(int));
 ``` 
 
 This works just fine! We have created an array by allocating 20 bytes (5 times
@@ -240,7 +240,7 @@ address. This is convenient because when it comes to arrays, if we want to find
 the address of the *n*th element of the array, we can find it via
 
 ```c
-    int* elem = my_array + n;
+int* elem = my_array + n;
 ```
 
 This same mechanism is behind array accesses: when we write `(my_array + 4)`,
@@ -296,8 +296,8 @@ We can treat `char`s as either ints or characters; the following statements are
 completely equivalent:
 
 ```c
-    char my_char = 78;
-    char my_char = 'N';
+char my_char = 78;
+char my_char = 'N';
 ```
 
 `'N'`, with single quotes, is a "character literal" which just exists to make it
@@ -389,6 +389,8 @@ int main()
 Without even looking at the contents of the new function, let's see why
 this won't work, and it's also an opportune time to talk about the stack.
 
+### The Stack
+
 Since a program can only execute one line of code at a time, calling functions
 can be organized in the following way: consider the program
 
@@ -405,20 +407,22 @@ int main()
 ```
 
 `main()` contains several local variables, `a`, `c`, and `b`. These variables
-essentially constitute `main()`'s "scratchpad" which is used to organize the
-data it needs to do its job. This scratchpad needs to live somewhere in memory,
-so that we can keep track of and use this data in an organized way.
+essentially constitute `main()`'s "scratchpad" which is what the programmer uses
+to organize the data needed by the program to do its job. This scratchpad, which
+we call "local memory" (as in, local to the function) needs to live somewhere in
+memory, so that we can keep track of and use this data in an organized way.
 
 `do_stuff()`, whatever it may do, also likely contains some local variables as
 a scratchpad to facilitate whatever stuff it does. These variables naturally
 also must live somewhere in memory for us to keep track of and access them.
 
-The way computers organize this information is called "the stack." A stack is a
-type of data structure which operates like a stack of dishes: you can pile
+The way computers often organize this information is called "the stack." A stack
+is a type of data structure which operates like a stack of dishes: you can pile
 things on top of the stack, and take them off of the stack, but you can only add
 or remove data from the top. This structure is very simple because, by requiring
 each element of the stack to keep track of the location of the element below it,
-we can keep track of the stack by storing only the address of its top.
+we can keep track of the whole stack by storing only the address of its top,
+which is our point of access to the structure.
 
 In the case of an executing program, the stack elements are the "frames" which
 store the local data of each function in the "call stack." You may have seen a
@@ -434,14 +438,15 @@ Something bad happened: your program has crashed, silly you.
 this structure is a handy description of the stack at the time of the crash,
 and what it's describing is this:
 
-When we begin our program, the function `main()` is automatically called. It
-needs a chunk of memory to perform its local operations. The compiler inspects
-the code upon compilation and determines that `main()` will need a stack frame
-of 12 bytes, 4 for each of the 3 local `int`s it uses. At the beginning of the
-program, our stack looks like this:
+When we begin our program, the function `main()` is automatically called
+(`main()` is the entry point of the program). `main()` needs a chunk of memory
+to perform its local operations. The compiler inspects the code upon compilation
+and determines that `main()` will need a stack frame of 12 bytes, 4 for each of
+the 3 local `int`s it uses. At the beginning of the program, our stack looks
+like this:
 
 
-![fig4](/figures/fig4.svg)
+![fig4](/diagrams/fig4.svg)
 <diagram> stack with just main
 
 Note that although these diagrams are schematic, they are actually fairly
@@ -464,7 +469,7 @@ say that `do_stuff()` requires 16 bytes for its local data, so we create a
 16-byte frame on top of `main()`'s frame, which allows `do_stuff()` to operate
 on its local data as necessary, without interfering with `main()`'s data.
 
-![fig5](/figures/fig5.svg)
+![fig5](/diagrams/fig5.svg)
 <diagram> stack with main + do\_stuff
 
 Following our fake stack trace example, let's say `do_stuff()` calls another
@@ -473,7 +478,7 @@ memory to do its work, so we just continue adding stack frames for each of our
 functions. When our program crashes and generates the stack trace above, this
 is what the stack trace looks like:
 
-![fig6](/figures/fig6.svg)
+![fig6](/diagrams/fig6.svg)
 <diagram> full stack with all 3 frames
 
 Glancing back to our fake stack trace, we can see that the trace was actually
@@ -493,12 +498,12 @@ If our program hadn't crashed, at some point `some_other_func()` would finish.
 Since it's done, we no longer need its local data, so we simply discard ("pop")
 its frame from the stack:
 
-![fig7](/figures/fig7.svg)
+![fig7](/diagrams/fig7.svg)
 <diagram> of top frame being popped
 
 The same thing happens when `do_stuff()` completes:
 
-![fig7](/figures/fig7.svg)
+![fig8](/diagrams/fig8.svg)
 <diagram> "
 
 And now we're back to where we started. If `main()` were to call another
@@ -508,13 +513,15 @@ our out of a called function.
 
 Now that I've tricked you into understanding some really rather granular details
 of how computers execute code, we're almost ready to understand the concept we
-saught in the beginning. First, however, we need to discuss the concept of "pass
-by value:" something I haven't mentioned yet about function calls are the
-arguments you pass to the function. The arguments you pass to a function also
-become local variables of the function, and thus end up in the stack frame, so
-a stack frame actually ends up looking something like this:
+sought in the beginning.
 
-![fig8](/figures/fig8.svg)
+First, however, we need to discuss the concept of "pass by value": something I
+haven't mentioned yet about function calls are the arguments you pass to the
+function. The arguments you pass to a function also become local variables of
+the function, and thus end up in the stack frame, so a stack frame actually
+ends up looking something like this:
+
+![fig9](/diagrams/fig9.svg)
 <diagram> of a stack frame
 
 And like the rest of the data in the stack frame, this data will be discarded
@@ -528,16 +535,51 @@ the original data by dereferencing the pointer. That original data could either
 be on the heap (elsewhere in memory) or from somewhere lower down in the stack,
 as shown in the following diagram:
 
-![fig9](/figures/fig9.svg)
+![fig10](/diagrams/fig10.svg)
 <diagram> showing top frame reaching down to another part of the stack
 
 So finally returning to face our goal: if we want our `find_char()` function to
 be able to update a pointer, passed by the user, to allow us to mark where it
-left off, we cannot simply pass it a pointer/address, because that address, even
+left off, we cannot simply pass it by value, because its value, an address, even
 if modified, will be discarded when the function returns. What we actually need
-is to pass the function **the address of an address**, or a pointer to a
-pointer, so that the pointer can be modified in a way that will be externally
-visible to the caller. Here, finally, is our entire re-entrant function:
+is to pass **the address of an address**, or a pointer to a pointer, so that the
+pointer can be modified in a way that will be externally visible to the caller.
+
+If this is still confusing, just remember that an address is simply an integer,
+so in order to have our function update this external integer, we need to
+provide the function with the address of the integer, so that it knows where to
+save the address we desire. This is no different than the standard way of
+passing pointers to a function; the only distinction is that in this case, the
+value we are passing is itself a pointer. While we write the datatype of the
+double pointer as, say, `int** a`, it might be more clear to write:
+
+```c
+typedef int* int_ptr;
+
+void my_func(int_ptr* arg);
+
+int a = 5;
+int_ptr b = &5;
+
+my_func(&b);
+```
+
+which suddenly looks quite similar to
+
+```c
+void my_func(int* arg);
+
+int a = 5;
+
+my_func(&a);
+```
+
+The typedef makes it clearer that, far than a double pointer being something
+particularly strange, it's really a normal pointer which happens to point to
+another pointer, and is no different from a pointer which points to an `int` or
+any other "boring" datatype.
+
+Here, finally, is our entire re-entrant function:
 
 ```c
 char* find_char(const char *str, char search_tgt, char** left_off)
@@ -567,16 +609,19 @@ char* find_char(const char *str, char search_tgt, char** left_off)
     return NULL;
 }
 ```
-Note that in order to access the `left_off` pointer, we must dereference it
-once! That is, `*left_off` is not the value of the character where we left
-off, but a pointer to it. If we want to access the value of the character
+
+Note that in order to access the `left_off` pointer, which contains the
+"bookmark" address, we must dereference it once! That is, `*left_off` is not the
+value of the character where we left off, but still a pointer to it; our
+`left_off` argument has two levels of indirection, and dereferencing it once
+only shaves off one level. If we want to access the value of the character
 itself, we must dereference `left_off` twice: once to find the address that
 marks the point where we left off, which is itself an address which needs to be
 dereferenced if we wish to find its contents. In this case, however, this should
 not be necessary as we only wish to know the location of the data, not the data
 itself.
 
-Now, with our new and improved function, we can call the following code:
+Now, with our new and improved function, we can run the following code:
 
 ```c
 int main()
@@ -605,13 +650,13 @@ Notice that we passed `&left_off`, the address of the pointer `left_off`.
 
 Here is what happens when `left_off` is dereferenced once:
 
-![fig10](/figures/fig10.svg)
+![fig11](/diagrams/fig11.svg)
 <diagram>
 
 Here is what would happen if our function wanted to access the value itself
 by dereferencing our pointer twice (`**left_off`):
 
-![fig11](/figures/fig11.svg)
+![fig12](/diagrams/fig12.svg)
 <diagram>
 
 
@@ -625,11 +670,9 @@ contrived example, it is still highly applicable. For example, the `strtok_r()`
 function found in `string.h`, which splits a string at a specified delimiting
 character, has the exact same interface we designed here, and the only real
 difference between that function and ours is that ours returns the "found"
-character, whereas `strtok_r()` returns the first character and sets the token
-character equal to `'\0'`, effectively turning the string into two strings, and
-returning the beginning of the first while storing the beginning of the second
-in the "left off" pointer. Although these are simple examples, they are more
-than adequate to illustrate the concept at hand.
+character, whereas `strtok_r()` returns the first character of a new sub-string.
+Although these are simple examples, they are more than adequate to illustrate
+the concept at hand.
 
 ## Void pointers
 
@@ -703,14 +746,81 @@ and now our "node" contains the address of our data. To retrieve the data from
 the node, we simply do the reverse:
 
 ```c
-    struct OurData* fetchedData = (struct OurData*)node->data;
+struct OurData* fetchedData = (struct OurData*)node->data;
 ```
 
-and we've recovered our data, by casting it to the desired type. The powerful
-thing about this method is that the `Node` struct does not need to know anything
-about the data, it only needs to know its location. We, the users, are
-responsible for being aware of the datatype, and casting it properly in order to
-access the value of the data.
+and we've recovered our data, by casting it to the desired type. The important
+thing to understand about this method is that the `Node` struct does not need to
+know anything about the data, it only needs to know its location; we, the users,
+are responsible for being aware of the datatype, and casting it properly in
+order for the program to interpret it properly. A final example, representing
+another common use of `void` pointers, is in I/O: if we are reading or writing
+data to or from a file, at some level a system call is being performed, such as
+the Linux kernel's `read()` and `write()` functions, which have signatures:
 
-Hopefully, given the deeper understanding of memory structure, this concept is
-not as frustrating as it would otherwise be.
+```c
+ssize_t read(int fd, void *buf, size_t count);
+
+ssize_t write(int fd, const void *buf, ssize_t count);
+```
+
+These functions take a file ID (`fd`), the address of the start of a buffer
+(`void *buf`), and some number of bytes to read or write to the file
+(`ssize_t count`; `ssize_t` is just an integer). The read and write functions
+do not need to know what the data being passed is; that's left to the caller to
+know, and is accounted for by specifying the number of bytes to read after the
+buffer address. Although somewhat of a confusing interface for the uninitiated,
+it is extremely flexible and general, making it ultimately far more useful. As
+a final example, here is a simple file format I have invented for storing an
+"Employee" struct to a file:
+
+```c
+struct Employee
+{
+    char* name;
+    char* title;
+    int age;
+    float salary;
+};
+
+void write_employee(int fd, struct Employee* e)
+{
+    size_t name_len = sizeof(e->name);
+    size_t title_len = sizeof(e->title);
+
+    write(fd, (void*)&name_len, sizeof(name_len));
+    write(fd, (void*)e->name, name_len);
+    write(fd, (void*)&title_len, sizeof(title_len));
+    write(fd, (void*)e->title, title_len);
+    write(fd, (void*)&e->age, sizeof(e->age));
+    write(fd, (void*)&e->salary, sizeof(e->salary));
+};
+
+struct Employee* read_employee(int fd)
+{
+    struct Employee* e = malloc(sizeof(struct Employee));
+    e->name = NULL;
+    e->title = NULL;
+    e->age = 0;
+    e->salary = 0.0f;
+
+    size_t name_len = 0;
+    size_t title_len = 0;
+
+    read(fd, (void*)&name_len, sizeof(name_len));
+    read(fd, (void*)e->name, name_len);
+    read(fd, (void*)&title_len, sizeof(title_len));
+    read(fd, (void*)e->title, title_len);
+    read(fd, (void*)&e->age, sizeof(e->age));
+    read(fd, (void*)&e-salary, sizeof(e->salary));
+    
+    return e;
+};
+
+```
+
+Not the most robust or failsafe interface, but as an example it stands: we can
+invent any sort of datatype, and read and write it to files in a repeatable way.
+All information about the format of the data in the file, and the type of
+information being stored is defined entirely in these functions, allowing the
+kernel syscalls to be entirely agnostic to the task at hand.

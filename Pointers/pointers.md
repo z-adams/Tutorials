@@ -19,13 +19,13 @@ to memory and say "I want the 17th thing in memory," but you cannot ask the
 computer for the "17.6th thing in memory" and extract data in smaller
 increments; the smallest thing you can address is 1 byte.
 
-Let's say we are writing a C program, and we want to add 3 numbers together.
+Let's say we are writing a C program, and we want to add 2 numbers together.
 Our program will look something like this:
 
 ```c
 int main()
 {
-    int a = 3;
+    int a = 2;
     int b = 5;
     int c = 0;
 
@@ -52,11 +52,16 @@ stored in the 4 bytes which start at location 0, `b` is stored in the 4 bytes
 which start at location 4, `c` is stored in the 4 bytes which start at location
 8, and so on. The size of each variable is determined by its datatype; the
 compiler sees `int a` and sets aside 4 bytes for `a`, since an `int` is 4 bytes
-large.
+large. In reality, the exact addresses are large numbers; in a real system, the
+location of `a` might be `0xCCD9A4AC` or some other large number expressed in
+hexadecimal, but we only care about where our data are relative to each other,
+so we'll describe our addresses and pointers in terms of offsets instead. Using
+offsets keeps the numbers small and more readable. 
 
 Guess what: we've just described all of these variables using pointers. Pointers
 are nothing more than a "handle" on data, which refer to the data based on where
-it is located in memory, rather than with a name like `a`.
+it is located in memory by storing its address, rather than giving the data a
+name like `a`.
 
 We could add a pointer to our program:
 
@@ -75,7 +80,7 @@ int main()
 
 We have created `int* p`, a pointer named `p` which refers to an `int`. We also
 immediately gave it a value: the address of c, `&c` (`&` means "the address of").
-We of course already know what the address of `c` is from last time, it is `8`.
+We of course already know what the address of `c` is from the diagram, it is `8`.
 So the pointer `int* p = &c` will contain the value `8`. Here's what our memory
 looks like now:
 
@@ -83,35 +88,34 @@ looks like now:
 
 We see that `p`, far from being something strange, is simply an integer. The
 only strange thing about it is that it stores the address of another piece of
-data in our program. By dereferencing `p`, we fetch the data stored at the
-address stored in `p`, in this case jumping to address `8` to retreive the
-contents of `c`, `7`.
+data in our program. By dereferencing `p` with `*p`, we take the address stored
+in `p`, and then fetch the data stored at this address, in this case jumping to
+address `8` to retreive the contents of `c`, which is `7`.
 
 The strange idea of "dereferencing" pointers may seem somewhat more concrete
 now; pointers "refer" to data via an address, so "dereferencing" the pointer
 literally means skipping the indirectness and retrieving the data being
 referred to. If we dereference our pointer by writing `*p`, we will simply
-retrieve whatever value is currently stored in `c`. In the diagram above,
-which was the state of the program before the addition happens, that value is
-zero. However, the thing about pointers that is so powerful is that after
-the addition happens, if we then dereference `p` again with `*p`, the value we
-obtain is the new value of `c`, in this case `7`! Since we are referring to
-the location of `c`, we can peek at whatever value `c` has whenever we like,
-and will always see the most updated value.
+retrieve whatever value is currently stored in `c`. The powerful result is that
+by keeping track of the location of the data, we can fetch the most up-to-date
+copy at any time! Even if our data is a huge chunk of memory, say, 1 gigabyte,
+rather than trying to somehow pass this huge value to a function, we can simply
+pass a lightweight pointer to the function, allowing the function to access the
+data as necessary with much less overhead.
 
-In isolation, this is a fairly boring example, which doesn't have much apparent
-use, so let's look at some more powerful applications. 
+In isolation, our example program is a fairly boring example which doesn't have
+much apparent use, so let's look at some more powerful applications. 
 
 Before we move on,
 however, it's important to know how the computer knows to read 4 bytes at the
 location referred to by the pointer: it knows based on the datatype of the
 pointer. Just like `int a` tells the computer to keep track of a 4-byte chunk
 of memory called `a`, `int* p` tells the computer to keep track of an address
-which points to an `int`, which is 4 bytes. Dereferencing `p` is saying "go
-fetch the 4-byte `int` at the location you're storing." We could have made a
-pointer of type `char*`, which would refer to the 1-byte chunk of memory
-located at the stored address (the `char` datatype is fundamentally just a
-1-byte integer).
+(which we have named `p`) which points to an `int`, which is 4 bytes.
+Dereferencing `p` is saying "go fetch the 4-byte `int` at the location you're
+storing." We could have made a pointer of type `char*`, which would refer to
+the 1-byte chunk of memory located at the stored address (the `char` datatype
+is fundamentally just a 1-byte integer; more on this later).
 
 ## Dynamic memory
 
@@ -131,9 +135,9 @@ int main()
 
 We created a pointer, `int* p` as before, but this time, instead of the address
 of an existing value, we have assigned it to the return value of `malloc()`.
-`malloc()` creates a chunk of memory somewhere with the specified size (the size
-of an `int`, 4 bytes, in this case), and returns the location where it was
-created. This scenario isn't all that different from before; it's a pointer
+`malloc()` creates a chunk of memory somewhere with the specified size (in this
+case, 4 byte -- the size of an `int`), and returns the location where the data
+was created. This scenario isn't all that different from before; it's a pointer
 referring to an `int` somewhere in memory. There's one key difference, though:
 the `int` in this case has no name! It was created on the "heap" (a section of
 memory which holds dynamic data) during program execution, and does not have a
@@ -152,7 +156,7 @@ int main()
     int* p = malloc(sizeof(int));
     int c = 3;
 
-    p = &c;  // leak!
+    p = &c;  // leak! p no longer points to our dynamic memory object
 
     // ...
 }
@@ -190,10 +194,10 @@ in "[the stack](#the-stack)") and can be freed automatically.
 The utility of a single, dynamically allocated `int` is not apparent, since such
 an object can simply be passed by value with minimal overhead, but this concept
 is a precursor to one of the most useful tools in all of programming: dynamic
-arrays. All data which goes on the "stack" (another region of memory like the
-"heap"; all of our normal variables, and anything else that isn't created with
-`malloc()` goes here) has a requirement imposed on it: the size of the data must
-be known at compile-time. The computer must know that an `int` is 4 bytes. The
+arrays. All data which goes on the "stack" (which stores all local variables,
+and anything else that isn't created with `malloc()`) has a requirement imposed
+on it: the size of the data must be known at compile-time. The computer must
+know that `c` is an `int`, and thus should have 4 bytes allocated for it. The
 same goes for arrays: if we wish to create an array on the stack, we simply
 declare it with
 
@@ -201,8 +205,9 @@ declare it with
 int my_array[10];
 ```
 
-and we have an array of 10 integers, named `my_array`. But what if we want to
-create an array at runtime, depending on, say, user input?
+and we have an array of 10 integers, named `my_array`, for which the computer
+will allocate 40 bytes. But what if we want to create an array at runtime,
+depending on, say, user input?
 
 ```c
 int user_input = 5;  // pretend this came from the user
@@ -212,8 +217,8 @@ int my_array[user_input];   // compiler error!
 This is not allowed, because the executable cannot possibly know how much
 memory to set aside to store `my_array` before the fact (this detail must be
 hard-coded into the executable upon compilation). The answer to this is
-dynamic arrays. Instead, we will create our array on the heap, and refer
-to it with a pointer:
+dynamic arrays. Instead, we will create our array dynamically (on the heap),
+and refer to it with a pointer:
 
 ```c
 int user_input = 5;
@@ -228,7 +233,8 @@ are a syntactic shortcut for something a little more complex. When we allocate
 *n* bytes of memory using `malloc(n)`, we create a chunk of *n* contiguous bytes
 in memory. There is no explicit structure in this arrangement, so where does the
 indexable array behavior come from? It turns out, when we index an array with
-square brackets like `my_array[4]`, this actually means `*(my_array + 4)`.
+square brackets like `my_array[4]`, this is actually shorthand for
+`*(my_array + 4)`.
 
 Several things are happening: first, we are "adding" 4 to our pointer. Pointer
 arithmetic is an entire subject to explore separately, but suffice it to say
@@ -264,11 +270,18 @@ Imaging we have an array, called `char* my_str`, which stores some number of
 characters. It turns out that the convenient "strings" most programming
 languages have handed you are nothing but pointers to arrays of ASCII characters
 (`char`), which are each one byte. If this is in any way confusing, remember
-that `char`s are nothing but 1-byte integers. They only behave like characters
-because we decided to treat them that way by calling them `char` and telling
-certain functions (like `printf()`) how to interpret them as characters
-([here is an ASCII table](http://www.asciitable.com/), take a look to see what
-the exact conversion is from 1-byte integers to characters).
+that `char`s are nothing but 1-byte integers. Like all other data in a computer
+that behaves like anything other than an integer, `char` behave like characters
+simply we have defined a way to encode higher-order information in integers.
+In this case, we've chosen to treat certain 1-byte integers as characters by
+calling them `char` and telling certain functions (like `printf()`) how to
+interpret them as characters.
+[Here is an ASCII table](http://www.asciitable.com/); take a look to see what
+the exact conversion is from 1-byte integers to characters. Note a common
+pitfall, when it comes to `chars` representing digits: the character `'8'`
+(representing the digit 8), for instance, has ASCII value 56. Don't try to
+create a `char` storing an integer digit and end up confused when something
+weird prints out!
 
 We can initialize a string explicitly as a list of characters:
 
@@ -280,8 +293,9 @@ Note the very end: we include `'\0'`, the "null character" (which has a
 numerical value of `0`), in our string. This serves as a convenient flag to
 indicate that the string has ended; otherwise, a program would have no idea when
 the string had ended without also having an explicit length of the string as
-well. We say that strings are **null terminated**, and the utility of this will
-be seen shortly.
+well. We say that strings are **null terminated**, which allows for a function
+to easily tell if it has reached the end of the string by checking for this
+character.
 
 We can also initialize a string with a "string literal" using double quotes:
 
@@ -300,11 +314,11 @@ char my_char = 78;
 char my_char = 'N';
 ```
 
-`'N'`, with single quotes, is a "character literal" which just exists to make it
-more convenient to assign the values of `char`s that are actually being used to
-store ASCII text. Under the hood, the compiler uses the ASCII table to directly
-translate `'N'` into the number `78`, so the statements above are exactly the
-same.
+`'N'`, with single quotes, is a **character literal** which just exists to make
+it more convenient to assign the values of `char`s that are actually being used
+to store ASCII text. Under the hood, the compiler uses the ASCII table to
+directly translate `'N'` into the number `78`, so the statements above are
+exactly the same.
 
 That means we could even have defined our string as follows:
 
@@ -313,11 +327,11 @@ char my_str[] = {72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33, 0};
 ```
 
 which should make you rather appreciative of the utility of string and character
-literals.
+literals!
 
-This is all sort of an aside, but when dealing with raw bytes of data, `char`
-is an important datatype to be very familiar with since it is often used to
-store a generic byte from memory, and has nothing to do with ASCII text.
+We are straying from the topic of pointers, but when dealing with raw bytes of
+data, `char` is an important datatype to be very familiar with since it is often
+used to store a generic byte from memory, and has nothing to do with ASCII text.
 Sometimes, the `<stdint.h>` header will be used instead, allowing for the use of
 `uint8_t`, a 1-byte unsigned integer type which represents one byte of generic
 data. Using this datatype makes the code easier to read, since using `char` may
@@ -397,8 +411,9 @@ This is an opportune time to talk about the stack.
 
 ### The Stack
 
-Since a program can only execute one line of code at a time, calling functions
-can be organized in the following way: consider the program
+Because of the depth-first way that a program is traversed during execution,
+stepping deeper and deeper as functions call more functions, the state of the
+program is often organized in the following way: consider the program
 
 ```c
 int main()
@@ -460,13 +475,14 @@ like this:
 
 Note that although these diagrams are schematic, they are actually fairly
 representative of what happens in memory. There really is a location in address
-space that contains a contiguous chain of stack frames to faciliate this
+space that contains a contiguous chain of stack frames to encode this
 structure. The reason why this is such an effective method is that when we
 compile our program, the compiler can be absolutely certain about how much
 memory each function call will take by inspecting its local data, so we can
-use this fast and compact system to store their data. This is not the case with
-dynamic data which we get from `malloc()`, the size of which is not known when
-the program is compiled.
+use this fast and compact system to store their data, which also makes it easy
+to free the memory when the function returns. This is not the case with dynamic
+data which we get from `malloc()`, the size of which is not known when the
+program is compiled, and which may live for an arbitrary amount of time.
 
 Now we reach line 6 of our program above, and `main()` calls `do_stuff()`. Let's
 say that `do_stuff()` requires 16 bytes for its local data, so we create a
@@ -479,7 +495,7 @@ Following our fake stack trace example, let's say `do_stuff()` calls another
 function, `some_other_func()`. Let's pretend this function needs 8 bytes of
 memory to do its work, so we just continue adding stack frames for each of our
 functions. When our program crashes and generates the stack trace above, this
-is what the stack trace looks like:
+is what the call stack looks like:
 
 ![fig6](diagrams/fig6.svg)
 
@@ -502,25 +518,28 @@ its frame from the stack:
 
 ![fig7](diagrams/fig7.svg)
 
-The same thing happens when `do_stuff()` completes:
+Now, the top of the stack contains the local data belonging to `do_stuff()`,
+which just so happens to be the function that takes control after its call to
+`some_other_func()` completes. How convenient! The same thing happens when
+`do_stuff()` completes:
 
 ![fig8](diagrams/fig8.svg)
 
-And now we're back to where we started. If `main()` were to call another
-function at some point, we would push a new stack frame on top of it just like
-we did with `do_stuff()` and continue this push-pop game whenever we step into,
-or out of, a called function.
+And now we're back to `main()`, where we started. If `main()` were to call
+another function at some point, we would push a new stack frame on top of it
+just like we did with `do_stuff()` and continue this push-pop game whenever we
+step into, or out of, a called function.
 
 Now that I've tricked you into understanding some really rather granular details
 of how computers execute code, we're almost ready to understand the concept we
 sought in the beginning.
 
 First, however, we need to discuss the concept of "pass by value": something I
-haven't mentioned yet about function calls are the arguments you pass to the
-function. The arguments you pass to a function also become local variables of
-the function, and thus end up in the stack frame, so a stack frame actually
-ends up storing more than just the "internal" local data, but also things like
-function arguments and some bookkeeping information as well.
+haven't mentioned yet about function calls are the arguments of the function.
+When a function is called, its arguments become local variables of that
+function, and thus end up in the stack frame, so a stack frame actually ends up
+storing more than just the "internal" local data, but also things like function
+arguments and some bookkeeping information as well.
 
 ![fig9](diagrams/fig9.svg)
 

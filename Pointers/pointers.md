@@ -189,7 +189,7 @@ in "[the stack](#the-stack)") and can be freed automatically.
 
 The utility of a single, dynamically allocated `int` is not apparent, since such
 an object can simply be passed by value with minimal overhead, but this concept
-is a precursor to one of the most powerful tools in all of programming: dynamic
+is a precursor to one of the most useful tools in all of programming: dynamic
 arrays. All data which goes on the "stack" (another region of memory like the
 "heap"; all of our normal variables, and anything else that isn't created with
 `malloc()` goes here) has a requirement imposed on it: the size of the data must
@@ -340,17 +340,19 @@ char* find_char(const char *str, char search_tgt)
 {
     char* itr = str;  // set our iterator to point to the start of the string
 
-    while (*itr != '\0')  // as long as we haven't hit the end of the string
+    /* As long as we haven't hit the end of the string (that is, as long as the
+       character under the iterator is not '\0'), perform the following loop: */
+    while (*itr != '\0')
     {
-        if (*itr == search_tgt)  // if we've found the search target,
+        if (*itr == search_tgt)  // If the character we're looking for is found,
         {
-            return itr;          // return its address
+            return itr;          // return its address.
         }
-        itr++;  // advance the iterator
+        itr++;  // If not, advance the iterator to the next char in the string
     }
 
-    return NULL;  // if we make it through the whole string without finding
-                  // our desired character, return NULL
+    return NULL;  // If we make it through the whole string without finding
+                  // our desired character, return NULL.
 }
 ```
 
@@ -362,17 +364,19 @@ This is all well and good, but let's impose an additional requirement on our
 function: we want it to be reentrant, that is, we want to be able to call the
 function a second time and have it pick up where it left off. Since we would
 prefer to avoid the mess of having some sort of internal variable to save the
-last position, we can instead mark the left-off point with a pointer.
+last position, we can instead save the location of the last visited character
+with a pointer.
 
 There an issue, though. Let's say we pass our "bookmark" pointer to the function
-like so:
+with an argument `char* left_off` like so:
 
 ```c
 char* find_char(const char *str, char search_tgt, char* left_off);
 ```
 
-We frequently pass things to functions with pointers like this, but this
-situation is different. Let's say that we set up our function call like so:
+That's how you pass the location of data to a function, right? We frequently
+pass things to functions with pointers like this, but this situation is
+different. Let's say that we set up our function call like so:
 
 ```c
 int main()
@@ -386,8 +390,10 @@ int main()
 }
 ```
 
-Without even looking at the contents of the new function, let's see why
-this won't work, and it's also an opportune time to talk about the stack.
+**This will not work!**
+
+Without even looking at the contents of the new function, we can discover why.
+This is an opportune time to talk about the stack.
 
 ### The Stack
 
@@ -410,11 +416,11 @@ int main()
 essentially constitute `main()`'s "scratchpad" which is what the programmer uses
 to organize the data needed by the program to do its job. This scratchpad, which
 we call "local memory" (as in, local to the function) needs to live somewhere in
-memory, so that we can keep track of and use this data in an organized way.
+memory, so that we can keep track of this data.
 
 `do_stuff()`, whatever it may do, also likely contains some local variables as
 a scratchpad to facilitate whatever stuff it does. These variables naturally
-also must live somewhere in memory for us to keep track of and access them.
+must also live somewhere in memory for us to keep track of and access them.
 
 The way computers often organize this information is called "the stack." A stack
 is a type of data structure which operates like a stack of dishes: you can pile
@@ -423,6 +429,8 @@ or remove data from the top. This structure is very simple because, by requiring
 each element of the stack to keep track of the location of the element below it,
 we can keep track of the whole stack by storing only the address of its top,
 which is our point of access to the structure.
+
+![stack](https://upload.wikimedia.org/wikipedia/commons/b/b4/Lifo_stack.png)
 
 In the case of an executing program, the stack elements are the "frames" which
 store the local data of each function in the "call stack." You may have seen a
@@ -447,7 +455,6 @@ like this:
 
 
 ![fig4](diagrams/fig4.svg)
-<diagram> stack with just main
 
 Note that although these diagrams are schematic, they are actually fairly
 representative of what happens in memory. There really is a location in address
@@ -459,18 +466,12 @@ use this fast and compact system to store their data. This is not the case with
 dynamic data which we get from `malloc()`, the size of which is not known when
 the program is compiled.
 
-/*"BP" is the "base pointer" which points to the bottom of the stack, and "SP" is
-the "stack pointer," which points to the top of the stack. Only the stack
-pointer is absolutely required, but most systems keep track of the base as well
-for convenience.*/
-
 Now we reach line 6 of our program above, and `main()` calls `do_stuff()`. Let's
 say that `do_stuff()` requires 16 bytes for its local data, so we create a
 16-byte frame on top of `main()`'s frame, which allows `do_stuff()` to operate
 on its local data as necessary, without interfering with `main()`'s data.
 
 ![fig5](diagrams/fig5.svg)
-<diagram> stack with main + do\_stuff
 
 Following our fake stack trace example, let's say `do_stuff()` calls another
 function, `some_other_func()`. Let's pretend this function needs 8 bytes of
@@ -479,7 +480,6 @@ functions. When our program crashes and generates the stack trace above, this
 is what the stack trace looks like:
 
 ![fig6](diagrams/fig6.svg)
-<diagram> full stack with all 3 frames
 
 Glancing back to our fake stack trace, we can see that the trace was actually
 just a list of all the frames on the stack. #0 represents the topmost (most
@@ -499,17 +499,15 @@ Since it's done, we no longer need its local data, so we simply discard ("pop")
 its frame from the stack:
 
 ![fig7](diagrams/fig7.svg)
-<diagram> of top frame being popped
 
 The same thing happens when `do_stuff()` completes:
 
 ![fig8](diagrams/fig8.svg)
-<diagram> "
 
 And now we're back to where we started. If `main()` were to call another
 function at some point, we would push a new stack frame on top of it just like
-we did with `do_stuff()` and continue this push-pop game whenever we step into
-our out of a called function.
+we did with `do_stuff()` and continue this push-pop game whenever we step into,
+or out of, a called function.
 
 Now that I've tricked you into understanding some really rather granular details
 of how computers execute code, we're almost ready to understand the concept we
@@ -519,10 +517,8 @@ First, however, we need to discuss the concept of "pass by value": something I
 haven't mentioned yet about function calls are the arguments you pass to the
 function. The arguments you pass to a function also become local variables of
 the function, and thus end up in the stack frame, so a stack frame actually
-ends up looking something like this:
-
-![fig9](diagrams/fig9.svg)
-<diagram> of a stack frame
+ends up storing more than just the "internal" local data, but also things like
+function arguments and some bookkeeping information as well.
 
 And like the rest of the data in the stack frame, this data will be discarded
 when the function is finished, which is why, if we want a function to modify one
@@ -536,14 +532,14 @@ be on the heap (elsewhere in memory) or from somewhere lower down in the stack,
 as shown in the following diagram:
 
 ![fig10](diagrams/fig10.svg)
-<diagram> showing top frame reaching down to another part of the stack
 
 So finally returning to face our goal: if we want our `find_char()` function to
-be able to update a pointer, passed by the user, to allow us to mark where it
-left off, we cannot simply pass it by value, because its value, an address, even
+be able to modify a pointer passed by the user, to allow us to mark where it
+left off, we cannot simply pass it by value, because its value (an address) even
 if modified, will be discarded when the function returns. What we actually need
 is to pass **the address of an address**, or a pointer to a pointer, so that the
-pointer can be modified in a way that will be externally visible to the caller.
+pointer, which lives lower down the stack, outside the function's local data,
+can be modified from within the function.
 
 If this is still confusing, just remember that an address is simply an integer,
 so in order to have our function update this external integer, we need to
@@ -574,7 +570,7 @@ int a = 5;
 my_func(&a);
 ```
 
-The typedef makes it clearer that, far than a double pointer being something
+The typedef makes it clearer that, far from a double pointer being something
 particularly strange, it's really a normal pointer which happens to point to
 another pointer, and is no different from a pointer which points to an `int` or
 any other "boring" datatype.
@@ -617,9 +613,13 @@ value of the character where we left off, but still a pointer to it; our
 only shaves off one level. If we want to access the value of the character
 itself, we must dereference `left_off` twice: once to find the address that
 marks the point where we left off, which is itself an address which needs to be
-dereferenced if we wish to find its contents. In this case, however, this should
-not be necessary as we only wish to know the location of the data, not the data
-itself.
+dereferenced a second time if we wish to find its contents. In this case,
+however, this should not be necessary as we only wish to know the location of
+the data, not the data itself.
+
+The important thing to keep in mind throughout this process is that the piece
+of data we want to modify is a `char*`, so to pass this data by reference we
+must use `char**`.
 
 Now, with our new and improved function, we can run the following code:
 
@@ -628,12 +628,12 @@ int main()
 {
     const char my_str[] = "Hello World!";
 
-    char* left_off = NULL;
+    char* marker = NULL;
     char* found_char = NULL;
 
     do
     {
-        found_char = find_char(my_str, 'o', &left_off);
+        found_char = find_char(my_str, 'o', &marker);
         if (found_char != NULL)
         {
             *found_char = 'x';
@@ -646,24 +646,34 @@ int main()
 }
 ```
 
-Notice that we passed `&left_off`, the address of the pointer `left_off`.
+Notice that we passed `&marker`, the address of the pointer `marker`, resulting
+in a double pointer.
 
-Here is what happens when `left_off` is dereferenced once:
+Let's say that `marker` and subsequently the `left_off` argument local to
+`find_char()` is currently pointing at the first 'o'. Here is what happens
+when `left_off` is dereferenced once within `find_char()`:
 
 ![fig11](diagrams/fig11.svg)
-<diagram>
+
+Notice how dereferencing `left_off` leads us to `marker`, which is still a
+pointer.
 
 Here is what would happen if our function wanted to access the value itself
-by dereferencing our pointer twice (`**left_off`):
+by dereferencing our pointer twice (`**left_off`, again done within
+`find_char()`):
 
 ![fig12](diagrams/fig12.svg)
-<diagram>
 
+After the first dereference, we found `marker`; after the second one, we
+finally retrieve the data pointed at by `marker`. This arrangement of double
+indirection is what allows our function to be able to modify a pointer that
+stores our position in the string, and outlives the scope of the function that
+sets it.
 
 If everything was written properly (it was, I tested it), our program will
 print the mysterious `Hellx Wxrld!`. In this case, the re-entrant function was
-not strictly necessary; if we replaced the "found" letter each time, the
-function would find the next instance on the next loop. However, there may be
+not strictly necessary; since we replaced the "found" letter each time, the
+function would find the next instance on the next call. However, there may be
 situations where we would not want to replace the letters, or our function may
 have served a more complicated purpose. Indeed, while this was somewhat of a
 contrived example, it is still highly applicable. For example, the `strtok_r()`
@@ -689,7 +699,7 @@ However, we only have to look as far as basic data structures to see where
 the shortcomings of these structures show. Consider a linked list, an expandable
 list which can store any data:
 
-<diagram> of a LL
+![fig13](diagrams/fig13.svg)
 
 ```c
 struct Node
@@ -701,8 +711,8 @@ struct Node
 
 Each element of the list stores a pointer to some generic data, and a pointer to
 the next element in the chain. One can immediately see that if we want this
-structure to store any sort of data, we can't assume its datatype. If we want to
-do this in C, we need to use `void` pointers.
+structure to store any type of data, we can't assume any one datatype. If we
+want to do this in C, we need to use `void` pointers.
 
 Void pointers, like all other pointers, simply store a memory address. The only
 difference is that we lose the tools mentioned above: we can't dereference a
@@ -753,10 +763,18 @@ and we've recovered our data, by casting it to the desired type. The important
 thing to understand about this method is that the `Node` struct does not need to
 know anything about the data, it only needs to know its location; we, the users,
 are responsible for being aware of the datatype, and casting it properly in
-order for the program to interpret it properly. A final example, representing
-another common use of `void` pointers, is in I/O: if we are reading or writing
-data to or from a file, at some level a system call is being performed, such as
-the Linux kernel's `read()` and `write()` functions, which have signatures:
+order for the program to interpret it properly. In the process, the data itself
+sat happily in memory and was entirely unaffected. In fact, the value of the
+pointer itself also was entirely unaffected; if the value of the pointer
+`node->data` were 1000, casting it with `(struct OurData*)node->data` has no
+effect on the address; it simply allows the compiler to know how large the data
+stored at that address is, so that the compiled program will fetch the correct
+number of bytes when the pointer is dereferenced.
+
+A final example, representing another common use of `void` pointers, is in I/O:
+if we are reading or writing data to or from a file, at some level a system call
+is being performed, such as the Linux kernel's `read()` and `write()` functions,
+which have signatures:
 
 ```c
 ssize_t read(int fd, void *buf, size_t count);
@@ -766,13 +784,13 @@ ssize_t write(int fd, const void *buf, ssize_t count);
 
 These functions take a file ID (`fd`), the address of the start of a buffer
 (`void *buf`), and some number of bytes to read or write to the file
-(`ssize_t count`; `ssize_t` is just an integer). The read and write functions
-do not need to know what the data being passed is; that's left to the caller to
-know, and is accounted for by specifying the number of bytes to read after the
-buffer address. Although somewhat of a confusing interface for the uninitiated,
-it is extremely flexible and general, making it ultimately far more useful. As
-a final example, here is a simple file format I have invented for storing an
-"Employee" struct to a file:
+(`ssize_t count`; `ssize_t` is just an integer type). The read and write
+functions do not need to know what the data being passed is; that's left to the
+caller to know, and is accounted for by specifying the number of bytes to read
+after the buffer address. Although somewhat of a confusing interface for the
+uninitiated, it is extremely flexible and general, making it ultimately far
+more useful. As a final example, here is a simple file format I have invented
+for storing an "Employee" struct to a file:
 
 ```c
 struct Employee

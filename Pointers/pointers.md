@@ -40,7 +40,7 @@ When we compile and run our program, the values of `a`, `b`, and `c` need to
 be kept track of somewhere, and that somewhere is in memory.
 Here is what memory looks like when our program executes:
 
-![fig1](/diagrams/fig1.svg)
+![fig1](diagrams/fig1.svg)
 
 At first, we have simply initialized our values, and then we perform an addition
 to change the value of `c`.
@@ -79,7 +79,7 @@ We of course already know what the address of `c` is from last time, it is `8`.
 So the pointer `int* p = &c` will contain the value `8`. Here's what our memory
 looks like now:
 
-![fig2](/diagrams/fig2.svg)
+![fig2](diagrams/fig2.svg)
 
 We see that `p`, far from being something strange, is simply an integer. The
 only strange thing about it is that it stores the address of another piece of
@@ -160,7 +160,7 @@ int main()
 
 and the resulting memory:
 
-![fig3](/diagrams/fig3.svg)
+![fig3](diagrams/fig3.svg)
 
 We can see that the `malloc()`'d data still exists in the heap, but since we
 reassigned our pointer to the address of `c`, we no longer are able to find it!
@@ -446,7 +446,7 @@ the 3 local `int`s it uses. At the beginning of the program, our stack looks
 like this:
 
 
-![fig4](/diagrams/fig4.svg)
+![fig4](diagrams/fig4.svg)
 <diagram> stack with just main
 
 Note that although these diagrams are schematic, they are actually fairly
@@ -469,7 +469,7 @@ say that `do_stuff()` requires 16 bytes for its local data, so we create a
 16-byte frame on top of `main()`'s frame, which allows `do_stuff()` to operate
 on its local data as necessary, without interfering with `main()`'s data.
 
-![fig5](/diagrams/fig5.svg)
+![fig5](diagrams/fig5.svg)
 <diagram> stack with main + do\_stuff
 
 Following our fake stack trace example, let's say `do_stuff()` calls another
@@ -478,7 +478,7 @@ memory to do its work, so we just continue adding stack frames for each of our
 functions. When our program crashes and generates the stack trace above, this
 is what the stack trace looks like:
 
-![fig6](/diagrams/fig6.svg)
+![fig6](diagrams/fig6.svg)
 <diagram> full stack with all 3 frames
 
 Glancing back to our fake stack trace, we can see that the trace was actually
@@ -498,12 +498,12 @@ If our program hadn't crashed, at some point `some_other_func()` would finish.
 Since it's done, we no longer need its local data, so we simply discard ("pop")
 its frame from the stack:
 
-![fig7](/diagrams/fig7.svg)
+![fig7](diagrams/fig7.svg)
 <diagram> of top frame being popped
 
 The same thing happens when `do_stuff()` completes:
 
-![fig8](/diagrams/fig8.svg)
+![fig8](diagrams/fig8.svg)
 <diagram> "
 
 And now we're back to where we started. If `main()` were to call another
@@ -521,7 +521,7 @@ function. The arguments you pass to a function also become local variables of
 the function, and thus end up in the stack frame, so a stack frame actually
 ends up looking something like this:
 
-![fig9](/diagrams/fig9.svg)
+![fig9](diagrams/fig9.svg)
 <diagram> of a stack frame
 
 And like the rest of the data in the stack frame, this data will be discarded
@@ -535,7 +535,7 @@ the original data by dereferencing the pointer. That original data could either
 be on the heap (elsewhere in memory) or from somewhere lower down in the stack,
 as shown in the following diagram:
 
-![fig10](/diagrams/fig10.svg)
+![fig10](diagrams/fig10.svg)
 <diagram> showing top frame reaching down to another part of the stack
 
 So finally returning to face our goal: if we want our `find_char()` function to
@@ -650,13 +650,13 @@ Notice that we passed `&left_off`, the address of the pointer `left_off`.
 
 Here is what happens when `left_off` is dereferenced once:
 
-![fig11](/diagrams/fig11.svg)
+![fig11](diagrams/fig11.svg)
 <diagram>
 
 Here is what would happen if our function wanted to access the value itself
 by dereferencing our pointer twice (`**left_off`):
 
-![fig12](/diagrams/fig12.svg)
+![fig12](diagrams/fig12.svg)
 <diagram>
 
 

@@ -267,7 +267,7 @@ languages have handed you are nothing but pointers to arrays of ASCII characters
 that `char`s are nothing but 1-byte integers. They only behave like characters
 because we decided to treat them that way by calling them `char` and telling
 certain functions (like `printf()`) how to interpret them as characters
-([here](http://www.asciitable.com/) is an ASCII table, take a look to see what
+([here is an ASCII table](http://www.asciitable.com/), take a look to see what
 the exact conversion is from 1-byte integers to characters).
 
 We can initialize a string explicitly as a list of characters:
@@ -432,6 +432,8 @@ which is our point of access to the structure.
 
 ![stack](https://upload.wikimedia.org/wikipedia/commons/b/b4/Lifo_stack.png)
 
+(from Wikipedia - "Call Stack")
+
 In the case of an executing program, the stack elements are the "frames" which
 store the local data of each function in the "call stack." You may have seen a
 stack in a **stack trace**, which typically looks something like this:
@@ -519,6 +521,8 @@ function. The arguments you pass to a function also become local variables of
 the function, and thus end up in the stack frame, so a stack frame actually
 ends up storing more than just the "internal" local data, but also things like
 function arguments and some bookkeeping information as well.
+
+![fig9](diagrams/fig9.svg)
 
 And like the rest of the data in the stack frame, this data will be discarded
 when the function is finished, which is why, if we want a function to modify one

@@ -185,7 +185,7 @@ using `malloc()`) frees the memory from use, allowing that region of memory to
 be repurposed for other things. Data on the stack (i.e. "regular" variables like
 `c` in our example) don't need to be freed manually, because the function which
 contains the variable is handled in a predictable way in memory (discussed later
-in <section>) and can be freed automatically.
+in "[the stack](#the-stack)") and can be freed automatically.
 
 The utility of a single, dynamically allocated `int` is not apparent, since such
 an object can simply be passed by value with minimal overhead, but this concept

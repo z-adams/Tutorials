@@ -1,5 +1,7 @@
-I'm going to show you how to write a game from dead scratch with as little help
-as possible. I belive the best way to learn anything like this is to just do it
+## How to write your first game engine
+
+I'm going to show you how to write a game from dead scratch.
+I belive the best way to learn anything like this is to just do it
 yourself with as little help as possible, and fall into every single pitfall and
 trap. You'll learn things the hard way, but you'll remember and understand them
 much better than if you copy and paste thousands of lines of code from a book or
@@ -13,10 +15,10 @@ tutorial is that they have all sorts of advanced edge cases and performance
 optimizations in mind. That's great, but it obfuscates the core thing we're
 trying to learn: how the hell a game works inside.
 
-The goal of this article is to provide you with the smallest possible amount of
-information you need to go play around on your own and figure out on your own
-how to *really* write a game engine. I'm going to describe the simplest possible
-**ECS (Entity-Component-System)** game engine. I'll explain what those terms
+The goal of this article is to provide you with the smallest amount of
+information you need to go play around on your own and figure out how to
+*really* write a game engine. I'm going to describe the simplest possible
+**ECS (Entity-Component-System)** engine. I'll explain what those terms
 mean as we go.
 
 Before I begin, I will present the whole thing up front so you can see what
@@ -35,22 +37,23 @@ using Velocity = glm::vec3;
 
 struct Drawable
 {
-	Mesh* m_mesh;
-	std::vector<Texture*> m_textures;
-	Shader* m_shader;
+    Mesh* m_mesh;
+    std::vector<Texture*> m_textures;
+    Shader* m_shader;
 };
 
-// ...
+// ... more components
 
 // ### Define component tags ###
+
 using Tag = uint32_t;
 namespace CompTags
 {
-	constexpr Tag NullTag = 0x0;
+    constexpr Tag NullTag = 0x0;
     constexpr Tag Position = 0x1;
     constexpr Tag Velocity = 0x1 << 1;
     constexpr Tag Drawable = 0x1 << 2;
-    // ...
+    // ... more component tags
 }
 
 // ### Define game data arrays ###
@@ -64,7 +67,7 @@ namespace GameData
     std::array<Position, N_ENTS> positions;
     std::array<Velocity, N_ENTS> velocities;
     std::array<Drawable, N_ENTS> drawables;
-    // ...
+    // ... more component arrays
 }
 
 // ### Define game systems ###
@@ -87,12 +90,12 @@ void process_kinematics(float dt)
 // Draw drawable entities
 void draw()
 {
-	for (Entity e = 0; e < N_ENTS; e++)
-	{
-		if (!(GameData::tags[e] & CompTags::Drawable)) { continue; }
+    for (Entity e = 0; e < N_ENTS; e++)
+    {
+        if (!(GameData::tags[e] & CompTags::Drawable)) { continue; }
 
-		// Draw the entity
-	}
+        // Draw the entity
+    }
 }
 
 
@@ -100,16 +103,16 @@ void draw()
 
 int main()
 {
-	constexpr float dt = 0.01f;
-	bool runGame = true;
+    constexpr float dt = 0.01f;
+    bool runGame = true;
 
-	while (runGame)
-	{
-		process_kinematics(dt);
-		draw();
-	}
+    while (runGame)
+    {
+        process_kinematics(dt);
+        draw();
+    }
 
-	return 0;
+    return 0;
 }
 ```
 
@@ -163,8 +166,9 @@ might start building various game objects via composition:
 
  * Say you have a game with boats and cars. If you wanted to make an amphibious
  vehicle, rather than having to code some custom logic for it, you just give it
- both a `Floats` and `Drives` component, and it will automatically be handled
- by the game logic that is responsible for those behaviors
+ both your `Floats` and `Drives` component which were made for the other
+ vehicles, and it will automatically be handled by the game logic that is
+ responsible for those behaviors
 
  * A bullet fired by the player would certainly have a `Position` and
  `Velocity`, but probably wouldn't have a `Drawable` unless it's some large
@@ -176,10 +180,10 @@ might start building various game objects via composition:
 
 At the end, I'll give a list of suggested components that might be useful.
 
-Components should be POD structs only, if possible. The behavior itself will be
+Components should be POD structs only, if possible. The logic itself will be
 defined in **systems** (which I'll describe shortly), so the components only
-need to store the data relevant to their behavior, not account for any logic.
-You'll see.
+need to store the state data relevant to their behavior, not account for any
+logic. You'll see.
 
 Now we need a way to associate entities with their component data:
 
@@ -187,7 +191,7 @@ Now we need a way to associate entities with their component data:
 using Tag = uint32_t;
 namespace CompTags
 {
-	constexpr Tag NullTag = 0x0;
+    constexpr Tag NullTag = 0x0;
     constexpr Tag Position = 0x1;
     constexpr Tag Velocity = 0x1 << 1;
     constexpr Tag Drawable = 0x1 << 2;
@@ -196,8 +200,8 @@ namespace CompTags
 ```
 
 An easy way to attach components to entities is using bitflags. Each entity will
-have a `Tag` object that we do bitwise ops on in order to add, remove, or test
-for the presence of the components. Finally, our actual game object data will be
+have a `Tag` object which we will add, remove, or test for the presence of
+components using bitwise operations. Finally, our actual game object data will be
 stored in plain old arrays:
 
 ```cpp
@@ -214,9 +218,10 @@ namespace GameData
 }
 ```
 
-We store an array `GameData::tags` which stores the `Tag` for each entity.
-Note that since `Entity` is just an int ID, we don't even need to store them
-anywhere. The `Entity` ID is implied by the array index of the tag or component.
+We store an array `GameData::tags` array which stores the `Tag` for each entity.
+
+**Note that since `Entity` is just an int ID, we don't even need to store them
+anywhere. The `Entity` ID is implied by the array index of the tag or component.**
 
 The rest of the arrays store our actual component data. Let's say that we want
 to get the position of entity #5. We can do:
@@ -234,8 +239,9 @@ to find the data that belongs to it. It's not a very efficient configuration:
 say you have some very specialized component, such as a "`MissileGuidance`"
 comp. If this component is only given to guided missiles that are actively
 in-flight, there will probably only ever be a few slots of the array actually
-being used at any given time, but that's the price we pay for our exceedingly
-simple arrangement. If that displeases you, go improve it yourself :P
+being used at any given time, and the rest will be watsed.That's the price we
+pay for our exceedingly simple arrangement. If that displeases you, go improve
+it yourself :P
 
 The actual game logic and component behaviors are implemented as **systems**,
 which all follow a similar pattern:
@@ -244,12 +250,12 @@ which all follow a similar pattern:
 // Draw drawable entities
 void draw()
 {
-	for (Entity e = 0; e < N_ENTS; e++)
-	{
-		if (!(GameData::tags[e] & CompTags::Drawable)) { continue; }
+    for (Entity e = 0; e < N_ENTS; e++)
+    {
+        if (!(GameData::tags[e] & CompTags::Drawable)) { continue; }
 
-		// Draw the entity
-	}
+        // Draw the entity
+    }
 }
 ```
 A system loops over all entities, and checks the `tags` array to see if the
@@ -293,16 +299,16 @@ such as this kinematics one.
 ```cpp
 int main()
 {
-	constexpr float dt = 0.01f;
-	bool runGame = true;
+    constexpr float dt = 0.01f;
+    bool runGame = true;
 
-	while (runGame)
-	{
-		process_kinematics(dt);
-		draw();
-	}
+    while (runGame)
+    {
+        process_kinematics(dt);
+        draw();
+    }
 
-	return 0;
+    return 0;
 }
 ```
 
@@ -329,12 +335,12 @@ Here's a list of basic components to get you thinking:
 | Components           | Function                                                   |
 |----------------------|------------------------------------------------------------|
 | Position             | self explanatory                                           |
-| Velocity             |                                                            |
-| Acceleration         |                                                            |
-| Orientation          |                                                            |
-| Angular Velocity     |                                                            |
-| Angular Acceleration |                                                            |
-| Mass                 |                                                            |
+| Velocity             | "                                                          |
+| Acceleration         | "                                                          |
+| Orientation          | "                                                          |
+| Angular Velocity     | "                                                          |
+| Angular Acceleration | "                                                          |
+| Mass                 | "                                                          |
 | Timer                | Triggers a callback when its internal countdown completes  |
 | Drawable             | Stores mesh, textures, shaders, etc used to draw an object |
 | Camera               | Represents a 3D viewport camera, used by rendering system  |

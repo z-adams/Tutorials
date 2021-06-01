@@ -831,7 +831,78 @@ int main()
     
     return 0;
 }
-
+```
 `new T[]` and `delete[]` are special versions of `new`/`delete` used for dealing
 with arrays, but their behavior is identical.
+
+There are other scenarios that are impossible without pointers. For instance,
+chaining objects together.
+
+Let's say we want to build a chain of nodes, where each node lets us access the
+next node:
+```cpp
+struct Node
+{
+    int value;
+
+    Node nextNode;
+};
 ```
+This is impossible. We can inspect the size of one node. Each node stores an
+`int` (4 bytes), and another Node. Except the size of the other node is also
+(4 + size of child node). This continues recursively, implying that each node
+requires an infinite amount of memory. Pointers break this nesting behavior:
+
+```cpp
+struct Node
+{
+    int value;
+    Node* nextNode;
+};
+
+Node a;
+Node b;
+
+a.nextNode = &b;
+```
+Now the chain is broken; `sizeof(Node)` is now just 12: `sizeof(int)` (4, almost
+always) + `sizeof(Node*)` (8; all pointers are 64-bits on a 64-bit machine),
+and our program is now well defined.
+
+## Object-Oriented Programming
+
+OOP (Object-Oriented Programming) is built into C++, in the form of
+**member functions**. A struct in C++ can have a function as a member:
+```cpp
+struct Vector3
+{
+    float x;
+    float y;
+    float z;
+
+    float vector_length();
+}
+```
+
+This function is declared within the struct, and defined externally:
+```cpp
+float Vector3::vector_length()
+{
+    return sqrt(x*x + y*y + z*z);
+}
+```
+Note the `Vector3::` which indicates that the function belongs to that struct.
+The workings of a member function are as with any other OOP language; the
+function is automatically given access to the member fields of the object
+whose function was called. As with many other languages, member functions can
+refer to its parent object via the `this` pointer:
+
+```cpp
+float Vector3::vector_length()
+{
+    float val = this->x;
+}
+```
+
+Normally this is not required though; the `this` is implied and only is
+necessary if another variable name conflicts with a member variable name.

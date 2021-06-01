@@ -185,9 +185,13 @@ unsigned int b;  // unsigned 32-bit integer in range [0, 4,294,967,295]
 short int c;  // signed 16-bit integer in range [-32,768 to 32,767]
 ```
 
-**Caveat:** the standard only enforces the minimum size of these types;
-if a compiler wanted, it could make them all 64-bit. If we want integers that
-are exactly a certain size, we can use the `<cstdint>` standard library header:
+**Caveat:** the standard only enforces the minimum size of these types.
+This means that you can never be sure exactly how large each datatype is.
+When you ask people what size an `int` is, they usually say something like "it
+depends on the platform." Although almost all platforms use 4-byte (32-bit)
+ints, it's true that you never know exactly how big integer type is.
+If we want integers that are exactly a certain size, we can use the `<cstdint>`
+standard library header:
 
 ```cpp
 #include <cstdint>
@@ -740,3 +744,94 @@ chunk of data itself.
 
 ## Dynamic Memory
 
+Sometimes, though, we need more. Named variables are limiting, because they
+require you to list them before they are used. What if we don't know what kind
+of data our program needs? What if we don't know how much? Dynamic memory allows
+us to circumvent these limitations at runtime.
+
+Say we are making a program that keeps track of player scores. Each player has
+a score represented by an `int`. We want our program to begin with something
+like:
+```
+> How many players?
+> Enter number of players:
+```
+and have the user input a number. In order to support this behavior, we need to
+be able to allocate data at runtime.
+
+#### Throwback; Memory Leaks
+
+In C, memory was allocated with `malloc()`. `malloc()` accepts a memory size, in
+bytes, and returns a pointer to the memory it creates. This would be used like:
+
+```cpp
+struct MyStruct
+{
+    int a;
+    float b;
+};
+
+MyStruct* myStruct = malloc(sizeof(MyStruct));
+```
+
+`sizeof()` is a build-in C/C++ function which returns the side of a datatype. In
+this case, `MyStruct` stores a 4-byte `int` and a 4-byte `float`, so its total
+size is 8 bytes. `malloc()` will then go interact with the Operating System's
+kernel, and request access to more memory. It will then return a pointer to the
+new chunk of memory, which you use to store your struct.
+
+This dynamically allocated memory is called "heap memory," because it's
+allocated in an unorganized way compared to the local memory of functions, which
+is allocated on the "stack" and is automatically cleaned up because the compiler
+knows exactly how much memory each function needs by the size of its local
+variables.
+
+Heap memory is not tracked automatically, and must be manually freed. In C, this
+was done with the `free()` function:
+```cpp
+free(myStruct);
+```
+
+#### `new`/`delete`
+
+In C++, we have a more convenient tool for creating and freeing dynamic/heap
+memory, called `new` and `delete`. A new object is allocated like so:
+```cpp
+struct MyStruct
+{
+    int a;
+    float b;
+};
+
+// Allocates memory for a MyStruct, returns pointer to it to store in myStruct
+MyStruct* myStruct = new MyStruct;
+
+// Deletes the dynamic memory pointed to by myStruct
+delete myStruct;
+```
+
+The words are different, and there are some subtle technical differences, but
+the behavior is the same.
+
+#### Back to our program:
+
+Now we're equipped to deal with our original problem:
+```cpp
+int main()
+{
+    int numPlayers = // get from user
+
+    // Dynamically allocate score array
+    int* playerScoreArray = new int[numPlayers];
+
+    playerScoreArray[0] = // ... do stuff with scores
+
+    // Before exit, free score array
+    delete[] playerScoreArray;
+    
+    return 0;
+}
+
+`new T[]` and `delete[]` are special versions of `new`/`delete` used for dealing
+with arrays, but their behavior is identical.
+```

@@ -356,6 +356,60 @@ figures. The smallest value you can add to the number and see results is
 That's all there is to C++ fundamental types. Every program imaginable is built
 out of these fundamental building blocks. Crazy, right?
 
+## Structures
+
+Structures, or **structs** are simple aggregations of variables. If we were
+stuck with only making variables of fundamental types, it would get pretty
+arduous. Luckily, structs allow us to group values together into a single unit.
+For example:
+```cpp
+struct Point
+{
+    float x;
+    float y;
+};
+```
+
+Rather than storing each coordinate individually, we can define a struct that
+stores them in a convenient package. `x` and `y` here are called
+**member fields** or **member variables** of the struct. Now, we can use the
+struct like a normal datatype:
+
+```cpp
+Point myPoint;
+
+myPoint.x = 1.0f;
+myPoint.y = 3.0f;
+```
+
+Structures can be "aggregate initialized," which accepts a list of elements in
+curly braces that will be mapped onto the member of the struct, in order
+(in this case `5.0f` will go into `x`, `6.0f` will go into `y`)
+```cpp
+Point otherPoint = {5.0f, 6.0f};
+```
+
+We can use structs to package fundamental types into conceptually powerful
+data:
+```cpp
+struct Vector3
+{
+    float x;
+    float y;
+    float z;
+};
+
+struct PhysicalObject
+{
+    Vector3 position;
+    Vector3 velocity;
+    float mass;
+};
+```
+
+And all of a sudden, we can start to see how fundamental types are built up into
+real programs.
+
 ## Logical Flow
 
 C++ has basic logical flow primitives like most other languages:
@@ -424,6 +478,13 @@ Arrays can be indexed (indices start at zero):
 int a = myArray[0]; // first element of the array
 
 int b = myArray[5]; // 6th element of the array
+
+myArray[10] = 3; // setting the value of an array element
+```
+
+Arrays can also be "aggregate initialized":
+```cpp
+int someNumbers[5] = {3, 12, -5, 99, 42};
 ```
 
 The size of the array must be specified directly, and be resolvable at
@@ -455,6 +516,27 @@ int my_function(int a, int b, int c)
     return a*b + c;
 }
 ```
+
+## Pass by Value
+
+Everything in C++ is pass-by-value. When you assign `int a = b;`, you are
+copying the value of `b` into `a`. There is no soft link between the two like
+there is in Java or Python. The same goes for function parameters:
+```cpp
+// A structure containing an array of 1000 64-bit ints, for a total size of 8kB
+struct HugeData
+{
+    uint64_t data[1000];
+};
+
+HugeData myData;  // 8kB variable
+
+// The "data" parameter will be copied, all 8kB of it, into the function. This
+// is not very efficient...
+void process_data(HugeData data);
+```
+
+We will see how to resolve this issue when we discuss pointers.
 
 ## Scope
 
@@ -545,4 +627,116 @@ int foo()
 }
 ```
 
+## Pointers
+
+Now, onto the good stuff. Sometimes, we want values to transcend the structure
+of our program imposed by things like variable scoping. It can also be useful to
+refer to variables indirectly. Enter the **pointer**.
+
+The pointer is literally just a memory location. Variables in the program all
+live somewhere in memory. If we want to get a particular piece of data (not the
+value of the data, but the data itself), we can do that with a pointer:
+
+```cpp
+int* p;  // a variable called p with type "int*" (pointer to an int)
+```
+
+We can assign the pointer to the **address** of an existing variable:
+```cpp
+int a = 100;
+
+int* p = &a;  // &a means "address of a"
+```
+
+Now `p` stores `a`'s address, which is just some big ugly number that describes
+`a`'s location in memory (it usually looks something like `0x31f30af1ba31a8c0`).
+The value inside `p` itself isn't important though; what is important is that we
+can use `p` to find the value of `a` again:
+
+```cpp
+int a = 100;
+
+a = 200;
+
+int* p = &a;
+
+int b = *p;  // b now stores 200
+```
+
+We **dereference** `p` with `*p`, which just means "`p` holds a memory address;
+take that memory address and actually go there, and find whatever data is stored
+there." In this case, that address is the location of `a`, so the value stored
+there is `100`. Dereferencing the pointer always gets us the most recent value
+stored in `a`, even if it's changed.
+
+#### Concrete Example
+
+Say we have an array of integers, full of random 32-bit unsigned integers:
+```cpp
+uint32_t myIntegers[100] = {3, 13, 107, //...
+```
+
+We want to find the largest element of this array. Not the largest *value*, the
+largest *element itself* (maybe we want to modify this element once it's found,
+perhaps as part of a sorting algorithm). We can accomplish this easily with
+pointers.
+
+Our function signature looks like this:
+```cpp
+uint32_t* find_largest(uint32_t* array, int arraySize);
+```
+We want our array to process the array, but we don't want to copy it all into
+the function (remember, all functions pass by value). Instead, we are going to
+pass a pointer to the beginning of the array, along with the number of elements
+in the array. With these pieces of data, we can access the array from inside the
+function without needing to pass a large amount of data.
+
+Our function returns a pointer, which we want to point to the largest element of
+the array. Here's how the function definition looks:
+
+```cpp
+uint32_t* find_largest(uint32_t* array, int arraySize)
+{
+    uint32_t largestValueSoFar = 0;  // initialize to smallest possible value
+
+    uint32_t* largestElement = nullptr; // nullptr is the "nothing" pointer value
+
+    for (int i = 0; i < arraySize; i++)
+    {
+        if (array[i] > largestValueSofar)
+        {
+            // Found a value bigger than anything so far
+
+            // New biggest value
+            largestValueSoFar = array[i];
+
+            // "Bookmark" this element as the largest by storing its address in
+            // our "largest element" pointer
+            largestElement = &array[i];
+        }
+    }
+
+    // At the end, the "largestElement" pointer stores the biggest array element
+    // we found, so return it
+    return largestElement;
+}
+```
+
+Now we can call our function:
+```cpp
+uint32_t myIntegers[100] = {3, 13, 107, //...
+
+uint32_t* find_largest(uint32_t* array, int arraySize);
+
+uint32_t* largestElement = find_largest(myIntegers, 100);
+```
+
+There are a few details here I glossed over, such as the fact that the array
+behaves just like a pointer when passing it into the function, and the function
+indexes the array even though it's a pointer. That's because arrays **decay** to
+pointers, meaning that when a named array (such as `myIntegers`) is used,
+its name actually refers to a pointer to the beginning of the array, not the
+chunk of data itself.
+
+## Dynamic Memory
 

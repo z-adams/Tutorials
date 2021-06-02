@@ -884,6 +884,70 @@ Now the chain is broken; `sizeof(Node)` is now just 12: `sizeof(int)` (4, almost
 always) + `sizeof(Node*)` (8; all pointers are 64-bits on a 64-bit machine),
 and our program is now well defined.
 
+## References
+
+In addition to pointer, C++ has another convenient way to refer to objects:
+```cpp
+void process_large_data(MyData& d);
+
+int main()
+{
+    MyData data;
+
+    process_large_data(data);
+    
+    return 0;
+}
+```
+
+The function accepts an argument with type `MyData&`. The post-fix `&` symbol
+indicates that `d` is actually a **reference** to a `MyData`. Under the hood,
+this is exactly the same as a pointer, but it has some convenient properties:
+
+**References can't be null (basically):** Unlike pointers, references are
+designed to never be null. With pointers, you often have to check to make sure
+they aren't null before dereferencing them, but with references, you can assume
+they point to something valid. This, for instance, is not allowed:
+
+```cpp
+int a = 5;  // an int
+
+int& b;  // an uninitialized reference to an int (ERROR)
+
+int& c = a; // reference to a
+```
+
+References sometimes end up storing a null value in unusual circumstances, but
+it's safe to assume this never happens.
+
+**References are converted implicitly**: You may have noticed that, unlike
+pointers, which are initialized with explicit addresses and explicitly
+dereferenced:
+
+```cpp
+int* p = &a;  // p point to the address of a (&a)
+
+int b = *p;  // dereferencing p to fill b
+```
+
+references are filled automatically, and accessed automatically:
+```cpp
+int& r = a;  // r refers to a automatically, no "&a" required!
+
+int b = r;  // value of "a" fetched automatically to fill b
+```
+
+References allow functions to deal with data indirectly to avoid expensive
+copies, while also avoiding the arduous syntax for pointers, which is overkill
+for the simple behavior often desired when passing objects by reference.
+
+#### Linguistic note:
+
+It's worth noting that "pass by reference" as a general programming concept is
+not the same as C++ references. "Pass by reference" simply means that functions
+receive data via its address, rather than its value; C++ allows for "pass by
+reference" through its pointer and reference language features.
+
 ## Object-Oriented Programming
 
 OOP (Object-Oriented Programming) is built into C++, in the form of

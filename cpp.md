@@ -12,7 +12,7 @@ modern C++ when you learn them on your own. C++11 is the first "modern C++"
 iteration of C++; this guide will be based on C++03, the previous version, also
 often called "C-with-classes C++" due to its simpler nature.
 
-## File Structure
+## File Structure, Language Overview
 
 C++ separates its code into "source" and "header" files. Every program begins
 with a main source file:
@@ -141,6 +141,17 @@ This behaves equivalently; the top of the file (up until the end of `main()`)
 looks identical to the result of `#include "simple_math.h"`. As long as the
 functions used in `main()` are declared before they're used, the implementation
 (definition) can be placed anywhere as long as the linker can find them later.
+
+### Object Lifetime
+
+Unlike memory-managed languages like Java, when a local variable is created, it
+exists immediately. This is in contrast to Java, where `new Object()` is
+required to actually create the object in memory.
+
+When an object is created, it is created somewhere in the computer's physical
+memory. This memory region may be full of random **"garbage"** values from some
+previous usage, so every object *must be manually initialized*, or it may
+contain a garbage value. We will discuss how to do this later.
 
 With that basic background out of the way, now on to the good stuff.
 
@@ -792,6 +803,10 @@ was done with the `free()` function:
 free(myStruct);
 ```
 
+**If you don't free your dynamic memory, and you lose track of it (by losing
+the pointer variable or pointing the pointer to something else), it will be
+"leaked" and become inaccessible to your program. Try to avoid doing this.**
+
 #### `new`/`delete`
 
 In C++, we have a more convenient tool for creating and freeing dynamic/heap
@@ -906,3 +921,159 @@ float Vector3::vector_length()
 
 Normally this is not required though; the `this` is implied and only is
 necessary if another variable name conflicts with a member variable name.
+
+### Classes
+
+In addition to structs, C++ also has **classes**. In C++, structs and classes
+are practically identical. The only difference between the two is that, by
+default, the contents of a class are **private**, meaning they cannot be
+accessed from the outside:
+
+```cpp
+class EmployeeDatabase
+{
+    float salaries[100];
+};
+
+int main()
+{
+    EmployeeDatabase db;
+
+    float stolenData = db.salaries[0];  // ERROR: can't access private member
+
+    return 0;
+}
+```
+
+If a class needs to communicate with the outside, it needs to explicitly declare
+members as public:
+```cpp
+struct Date { /* ... */ };
+
+class EmployeeDatabase
+{
+public:
+    void set_salary(int index, float salary);
+
+    Date birthdays[100];
+
+private:
+    float salaries[100];
+};
+
+int main()
+{
+    EmployeeDatabase db;
+
+    float stolenData = db.salaries[0];  // ERROR: can't access private member
+    
+    db.set_salary(0, -1000.0f);  // Legal, member function is public
+
+    Date birthday = db.birthdays(4);  // Legal, member variable is public
+
+    return 0;
+}
+```
+
+Note that once you've started a `public:` section, you need to explicitly start
+a `private:` section to make private members. By convention, it's good to *put
+the public members first* as someone using your class will be primarily
+interested in the interface it provides, not its inner workings.
+
+All of this can be done exactly the same in structs (as they are identical to
+classes, apart from the default-public member visibility). However, by
+convention, structs are typically used for **POD** ("Plain Old Data") types,
+which store only data, and have no member functions. Use classes for any object
+that has nontrivial logic embedded in it.
+
+### Constructors and Destructors
+
+In C++, structs and classes can have constructors and destructors:
+
+```cpp
+class DynamicArray
+{
+public:
+    DynamicArray(int size);  // Constructor
+
+    DynamicArray();  // Default constructor
+
+    ~DynamicArray();  // Destructor
+
+private:
+    int arraySize;
+    int* internalArray;
+};
+```
+
+Constructors are functions with no return type, and with the same name as
+the struct. Destructors are the same, except their name leads with a `~`.
+
+Constructors are likely familiar from other OOP languages. *Destructors* are
+probably not. In C++, constructors and destructors are particularly useful
+because they allow for dynamic memory to be handled in a programmatic way. Let's
+look at the implementations of this class:
+
+```cpp
+// Constructor implementation
+DynamicArray::DynamicArray(int size)
+{
+    // Allocate a dynamic array with "size" elements
+    internalArray = new int[size];
+
+    // Store size for later
+    arraySize = size;
+    
+    // Initialize all array elements to zero
+    for (int i = 0; i < size; i++)
+    {
+        internalArray[i] = 0;
+    }
+}
+
+// Default constructor implementation
+DynamicArray::DynamicArray()
+{
+    internalArray = nullptr;
+    arraySize = 0;
+}
+
+// Destructor implementation
+DynamicArray::~DynamicArray()
+{
+    // Check to see if array exists
+    if (internalArray != nullptr)
+    {
+        // Free dynamic memory
+        delete[] internalArray;
+    }
+}
+```
+
+In the constructor, we allocate the dynamic memory needed by our class. In our
+destructor, we free the dynamic memory needed by our class. Since the
+constructor and destructor are guaranteed to be called:
+
+```cpp
+int main()
+{
+    DynamicArray myArray(50);  // Passes 50 to DynamicArray's constructor
+    // Memory is allocated in constructor
+
+    // ... do stuff
+
+    return 0;
+
+    /* When main() ends, all its local variables (including myArray) go out of
+       scope. When a variable goes out of scope, its destructor is automatically
+       called, so myArray's dynamic memory is freed automatically, and is not
+       leaked.
+    */
+}
+```
+
+This principle is called **RAII** (**R**esource **A**cquisition **i**s
+**i**nitialization) and is a core guideline for writing C++ code. If you follow
+RAII carefully, it becomes much harder to accidentally lose track of dynamic
+memory.
+

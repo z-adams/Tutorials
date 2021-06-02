@@ -1,4 +1,4 @@
-# C++ in One Page
+# C++ in Two Pages
 
 Here is an example C++ program:
 

@@ -90,6 +90,17 @@ validates the usage of any function that has been declared, and assumes the
 implementation will be found later. After compilation, the **linker** searches
 all the compiled sources and resolves these missing links.
 
+In our case, our program begins in **main.cpp**, which includes
+**simple\_math.h** to learn about the existance of the `Vector3` class. It adds
+its own function declaration, `Vector3 add(Vector3 a, Vector3 b)`. In the
+`main()` function, the program creates several vectors, and tests the available
+functions on them before printing out a value to console. The implementation of
+the `Vector3` member functions are stored in **simple\_math.cpp** which is
+compiled separately and linked to **main.cpp** in order to resolve the use of
+the `Vector3::dot(Vector3 other)` function.
+
+### Local Variables
+
 Datatypes can be grouped into custom datatypes called structs:
 ```cpp
 struct Point

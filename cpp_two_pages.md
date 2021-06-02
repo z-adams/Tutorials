@@ -2,6 +2,7 @@
 
 Here is an example C++ program:
 
+#### main.cpp:
 ```cpp
 #include <iostream>
 #include "simple_math.h"
@@ -41,7 +42,7 @@ Vector3 add(Vector3 a, Vector3 b)
 }
 ```
 
-`simple_math.h`:
+#### simple\_math.h:
 ```cpp
 #pragma once
 
@@ -56,8 +57,9 @@ struct Vector3
 
 ```
 
-`simple_math.cpp`:
+#### simple\_math.cpp:
 ```cpp
+#include "simple_math.h"
 
 float Vector3::dot(Vector3 other)
 {
@@ -88,17 +90,6 @@ validates the usage of any function that has been declared, and assumes the
 implementation will be found later. After compilation, the **linker** searches
 all the compiled sources and resolves these missing links.
 
-In C++, local variables are created instantly. If a function creates a local
-variable:
-```cpp
-int main()
-{
-    int a;
-}
-```
-memory is immediately allocated to store `a`, and this memory lives directly in
-the function's working memory.
-
 Datatypes can be grouped into custom datatypes called structs:
 ```cpp
 struct Point
@@ -119,7 +110,21 @@ void foo()
     //...
 }
 ```
-When the function exits, `bar` is deleted immediately from memory.
+In C++, local variables are created instantly. If a function creates a local
+variable:
+```cpp
+int main()
+{
+    int a;
+}
+```
+
+**Memory is immediately allocated to store `a`, and this memory lives directly in
+the function's working memory.**
+
+**When the function exits, `bar` is deleted immediately from memory.**
+
+This is different from managed languages like Java.
 
 Functions accept all arguments by value:
 ```cpp

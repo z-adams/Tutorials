@@ -487,7 +487,7 @@ stack in a **stack trace**, which typically looks something like this:
 
 ```
 Something bad happened: your program has crashed, silly you.
-    #0 in some_other_func() at other_stuff.c:417
+    #0 in other_func() at other_stuff.c:417
     #1 in do_stuff() at do_stuff.c:341
     #2 in main() at main.c:6
 ```
@@ -530,7 +530,8 @@ on its local data as necessary, without interfering with `main()`'s data.
 
 ![fig5](diagrams/fig5.svg)
 
-**Fig. 5:** *
+**Fig. 5:** *A 16-byte stack frame for `do_stuff()` is pushed on top of
+`main()`, leaving the stack a total of 28 bytes tall.*
 
 Following our fake stack trace example, let's say `do_stuff()` calls another
 function, `some_other_func()`. Let's pretend this function needs 8 bytes of
@@ -539,11 +540,20 @@ functions. When our program crashes and generates the stack trace above, this
 is what the call stack looks like:
 
 ![fig6](diagrams/fig6.svg)
+**Fig. 6:** *An 8-byte stack frame for `other_func()` is pushed to the
+stack.*
 
 Glancing back to our fake stack trace, we can see that the trace was actually
-just a list of all the frames on the stack. #0 represents the topmost (most
-recent) call, #1 represents the frame of the calling function, #2 represents
-the frame of the function that called #1, and so on.
+just a list of all the frames on the stack:
+```
+Something bad happened: your program has crashed, silly you.
+    #0 in other_func() at other_stuff.c:417
+    #1 in do_stuff() at do_stuff.c:341
+    #2 in main() at main.c:6
+```
+\#0 represents the topmost (most recent) call, \#1 represents the frame of the
+calling function, \#2 represents the frame of the function that called \#1, and
+so on.
 
 The ability to analyze the contents of the stack is incredibly useful, because
 it helps you track down the source of the crash. Often times, the topmost few
@@ -551,13 +561,15 @@ frames in the stack belong to library functions which you didn't write; the
 program probably crashed because you fed them bad data! Luckily, by inspecting
 the stack, you can follow the chain of calls that led the program to that point,
 and by observing the data in the frames, you can see what conditions led to the
-crash.
+crash. Most debuggers allow you to freely explore the current stack, and observe
+the state of each frame to debug the source of a crash.
 
 If our program hadn't crashed, at some point `some_other_func()` would finish.
 Since it's done, we no longer need its local data, so we simply discard ("pop")
 its frame from the stack:
 
 ![fig7](diagrams/fig7.svg)
+**Fig. 7:** *`other_func()` returns, causing its stack frame to be popped.*
 
 Now, the top of the stack contains the local data belonging to `do_stuff()`,
 which just so happens to be the function that takes control after its call to
@@ -565,6 +577,7 @@ which just so happens to be the function that takes control after its call to
 `do_stuff()` completes:
 
 ![fig8](diagrams/fig8.svg)
+**Fig. 8:** *When `do_stuff()` returns, we return to `main()`.*
 
 And now we're back to `main()`, where we started. If `main()` were to call
 another function at some point, we would push a new stack frame on top of it
@@ -583,6 +596,10 @@ storing more than just the "internal" local data, but also things like function
 arguments and some bookkeeping information as well.
 
 ![fig9](diagrams/fig9.svg)
+**Fig. 9:** *A more accurate anatomy of a stack frame. In addition to local
+function variables, the function arguments are also copied locally into the
+stack frame, as is some extra data needed to jump back to the correct location
+when the function returns.*
 
 And like the rest of the data in the stack frame, this data will be discarded
 when the function is finished, which is why, if we want a function to modify one
@@ -596,14 +613,17 @@ be on the heap (elsewhere in memory) or from somewhere lower down in the stack,
 as shown in the following diagram:
 
 ![fig10](diagrams/fig10.svg)
+**Fig. 10:** *"Pass by value." `func()` accepts a pointer `p` as an argument,
+which contains the address of `var`, a variable in `main()`. `func()` may
+dereference this pointer in order to "reach out" of its local memory and modify
+`var`'s memory directly.*
 
 So finally returning to face our goal: if we want our `find_char()` function to
-be able to modify a pointer passed by the user, to allow us to mark where it
-left off, we cannot simply pass it by value, because its value (an address) even
-if modified, will be discarded when the function returns. What we actually need
-is to pass **the address of an address**, or a pointer to a pointer, so that the
-pointer, which lives lower down the stack, outside the function's local data,
-can be modified from within the function.
+be able to modify a pointer passed by the user, we cannot simply pass it by
+value, because its value (an address) will be discarded when the function
+returns. What we actually need is to pass **the address of an address**, or a
+pointer to our pointer, so that our bookmark pointer can be modified by the
+function.
 
 If this is still confusing, just remember that an address is simply an integer,
 so in order to have our function update this external integer, we need to
@@ -717,16 +737,25 @@ Let's say that `marker` and subsequently the `left_off` argument local to
 `find_char()` is currently pointing at the first 'o'. Here is what happens
 when `left_off` is dereferenced once within `find_char()`:
 
-<img src="https://github.com/z-adams/TestCurriculum/blob/master/Pointers/diagrams/fig11.svg" align="center">
-
-Notice how dereferencing `left_off` leads us to `marker`, which is still a
-pointer.
+![fig11](diagrams/fig11.svg)
+**Fig. 11:** *The contents of the stack when `marker` is pointing at the first
+'o' in `my_str`. Several things to note: Notice the contents of `my_str`, which
+exists as an array in `main()`'s local memory. `marker` stores the value `20`,
+which is equal to `my_str + 4` or equivalently `my_str[4]`, the first 'o' in the
+string. Notice how `find_char()`'s argument `left_off`, which receives the value
+`&marker`, stores `8`, the address of marker. Dereferencing `left_off` will thus
+fetch the address stored in `marker`, rather than the data `marker` points to.
+This is the mechanism that allows us to modify which character `marker` points
+to from within `find_char()`.*
 
 Here is what would happen if our function wanted to access the value itself
 by dereferencing our pointer twice (`**left_off`, again done within
 `find_char()`):
 
 ![fig12](diagrams/fig12.svg)
+**Fig. 12:** *A double-dereference of `left_off`. The first dereference fetches
+`marker` (the pointer), and the second dereference is applied to `marker`,
+fetching the character it points to (`'o'` at `my_str + 4`).*
 
 After the first dereference, we found `marker`; after the second one, we
 finally retrieve the data pointed at by `marker`. This arrangement of double
@@ -752,7 +781,7 @@ the concept at hand.
 
 ### Abandon hope, all ye who enter here
 
-At this point, we have the necessary knowledge to open the Pandora's box of
+At this point, we have the necessary knowledge to open the Pandora's Box of
 memory management. So far we've been relying on the structure imposed by
 datatypes to provide a convenient interface for pointers. It allowed for handy
 tools like pointer arithmetic (which we saw in `*(my_array + n)`) and the
@@ -764,12 +793,14 @@ the shortcomings of these structures show. Consider a linked list, an expandable
 list which can store any data:
 
 ![fig13](diagrams/fig13.svg)
+**Fig. 13:** *A linked list: an expandable list which consists of a chain of
+nodes which refer to their successor via a pointer.*
 
 ```c
 struct Node
 {
     struct Node* next;
-    <datatype>* data;
+    /*datatype?*/* data;
 };
 ```
 
@@ -795,12 +826,12 @@ struct Node
 };
 ```
 
-We can create a Node like so, in this case passing some arbitrary struct:
+We can create a `Node` like so, in this case passing some arbitrary struct:
 
 ```c
 struct OurData
 {
-    // this could be anything
+    // this could contain anything
 };
 
 int main()
@@ -816,24 +847,24 @@ int main()
 };
 ```
 
-and now our "node" contains the address of our data. To retrieve the data from
-the node, we simply do the reverse:
+and now our "node" contains the address of our data. We, the programmer, know
+that these void pointers point to a `struct OurData`, so we may cast the pointer
+to a `struct OurData*` and then dereference them to retrieve our data:
 
 ```c
 struct OurData* fetchedData = (struct OurData*)node->data;
 ```
 
-and we've recovered our data, by casting it to the desired type. The important
-thing to understand about this method is that the `Node` struct does not need to
-know anything about the data, it only needs to know its location; we, the users,
-are responsible for being aware of the datatype, and casting it properly in
-order for the program to interpret it properly. In the process, the data itself
-sat happily in memory and was entirely unaffected. In fact, the value of the
-pointer itself also was entirely unaffected; if the value of the pointer
-`node->data` were 1000, casting it with `(struct OurData*)node->data` has no
-effect on the address; it simply allows the compiler to know how large the data
-stored at that address is, so that the compiled program will fetch the correct
-number of bytes when the pointer is dereferenced.
+The important thing to understand about this method is that the `Node` struct
+does not need to know anything about the data, it only needs to know its
+location; we, the users, are responsible for being aware of the datatype, and
+casting it properly in order for the program to interpret it. In the process,
+the data itself sat happily in memory and was entirely unaffected. In fact, the
+value of the pointer itself also was entirely unaffected; if the value of the
+pointer `node->data` were 1000, casting it with `(struct OurData*)node->data`
+has no effect on the address; it simply allows the compiler to know how large
+the data stored at that address is, so that the compiled program will fetch the
+correct number of bytes when the pointer is dereferenced.
 
 A final example, representing another common use of `void` pointers, is in I/O:
 if we are reading or writing data to or from a file, at some level a system call
@@ -906,3 +937,10 @@ invent any sort of datatype, and read and write it to files in a repeatable way.
 All information about the format of the data in the file, and the type of
 information being stored is defined entirely in these functions, allowing the
 kernel syscalls to be entirely agnostic to the task at hand.
+
+Ultimately, the only way to become entirely fluent with pointers is to garner
+many hours of practice using them in projects. I hope this primer may serve as
+a useful reference when trying to understand complicated memory operations.
+When it doubt, draw a diagram. If you can draw a memory diagram similar to the
+ones in this document, you can understand any pointer scenario. Just try not to
+become a [three star programmer](https://wiki.c2.com/?ThreeStarProgrammer).

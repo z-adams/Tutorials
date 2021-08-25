@@ -2,7 +2,7 @@
 
 Pointers are notorious for being confusing. What do they really do?
 
-The reason most people find pointers confusing is that few people have a
+The reason most people find pointers confusing is that few have a
 rigorous understanding of how a program is represented in memory. This is
 unsurprising, since few languages or applications of programming explicitly
 demand such an understanding, but pointers are one of the times where this
@@ -23,7 +23,7 @@ Let's say we are writing a C program, and we want to add 2 numbers together.
 Our program will look something like this:
 
 ```c
-int main()
+int main(void)
 {
     int a = 2;
     int b = 5;
@@ -42,21 +42,33 @@ Here is what memory looks like when our program executes:
 
 ![fig1](diagrams/fig1.svg)
 
-At first, we have simply initialized our values, and then we perform an addition
-to change the value of `c`.
+**Fig. 1:** *In the left strip, we have simply initialized our values. We then perform an
+addition to change the value of `c`, and end up with the resulting state on the
+right.*
 
-The "offset" values are the same addresses we discussed earlier; most data types
-used in programs, such as `int` and `float` take up 4 bytes. In these cases, we
-refer to each variable by the address of its first byte. For instance, `a` is
-stored in the 4 bytes which start at location 0, `b` is stored in the 4 bytes
-which start at location 4, `c` is stored in the 4 bytes which start at location
-8, and so on. The size of each variable is determined by its datatype; the
-compiler sees `int a` and sets aside 4 bytes for `a`, since an `int` is 4 bytes
-large. In reality, the exact addresses are large numbers; in a real system, the
-location of `a` might be `0xCCD9A4AC` or some other large number expressed in
-hexadecimal, but we only care about where our data are relative to each other,
-so we'll describe our addresses and pointers in terms of offsets instead. Using
-offsets keeps the numbers small and more readable. 
+
+The strips pictured represents the one-dimensional list of bytes that comprises
+the system memory. In our diagram, memory addresses (labeled on the left side)
+begin at the bottom and increase upwards. These are the same addresses we
+discussed earlier. We draw horizontal lines which represent the boundary between
+variables; in our case, each `int` is 4 bytes (this is typical for most modern
+computers), so our first `int a` begins at byte `0`, `int b` begins at byte `4`,
+and so on. We label each variable's memory with its identifier (`a`, `b`, `c`)
+on the right side of the strip, and inside each chunk, we write the value that
+is contained by that variable, stored in binary within its 4 bytes.
+
+Most data types used in programs, such as `int` and `float` take up 4 bytes.
+In these cases, we refer to each variable by the address of its first byte. For
+instance, `a` is stored in the 4 bytes which start at location 0, `b` is stored
+in the 4 bytes which start at location 4, `c` is stored in the 4 bytes which
+start at location 8, and so on. The size of each variable is determined by its
+datatype; the compiler sees `int a` and sets aside 4 bytes for `a`, since an
+`int` is 4 bytes large. In reality, the exact addresses are large numbers; in a
+real system, the location of `a` might be `0xCCD9A4AC` or some other large
+number expressed in hexadecimal, but we only care about where our data are
+relative to each other, so we'll describe our addresses and pointers in terms
+of offsets from some arbitrary address instead. Using offsets keeps the numbers
+small and more readable. 
 
 Guess what: we've just described all of these variables using pointers. Pointers
 are nothing more than a "handle" on data, which refer to the data based on where
@@ -79,18 +91,25 @@ int main()
 ```
 
 We have created `int* p`, a pointer named `p` which refers to an `int`. We also
-immediately gave it a value: the address of c, `&c` (`&` means "the address of").
-We of course already know what the address of `c` is from the diagram, it is `8`.
+immediately gave it a value: the address of `c`, `&c` (`&` means "the address of").
+We of course already know what the address of `c` is from the diagram: it is `8`.
 So the pointer `int* p = &c` will contain the value `8`. Here's what our memory
 looks like now:
 
 ![fig2](diagrams/fig2.svg)
 
+**Fig. 2:** *The left strip is just like before, only with space for our new `p`
+pointer variable. `p` contains the value `8`, which is the address of `c`. In
+the right diagram, we "dereference" `p`, which takes the address it contains
+(`8`), goes to that location in memory, and fetches the value there. In this
+case, that is the value stored in `c`, which is `7`.*
+
 We see that `p`, far from being something strange, is simply an integer. The
 only strange thing about it is that it stores the address of another piece of
 data in our program. By dereferencing `p` with `*p`, we take the address stored
-in `p`, and then fetch the data stored at this address, in this case jumping to
-address `8` to retreive the contents of `c`, which is `7`.
+in `p`, and then fetch the data stored at this address. The program fetches
+1 `int` worth of memory (4 bytes, in our case), because `p` is a pointer to an
+int (`int*`).
 
 The strange idea of "dereferencing" pointers may seem somewhat more concrete
 now; pointers "refer" to data via an address, so "dereferencing" the pointer
@@ -105,17 +124,6 @@ data as necessary with much less overhead.
 
 In isolation, our example program is a fairly boring example which doesn't have
 much apparent use, so let's look at some more powerful applications. 
-
-Before we move on,
-however, it's important to know how the computer knows to read 4 bytes at the
-location referred to by the pointer: it knows based on the datatype of the
-pointer. Just like `int a` tells the computer to keep track of a 4-byte chunk
-of memory called `a`, `int* p` tells the computer to keep track of an address
-(which we have named `p`) which points to an `int`, which is 4 bytes.
-Dereferencing `p` is saying "go fetch the 4-byte `int` at the location you're
-storing." We could have made a pointer of type `char*`, which would refer to
-the 1-byte chunk of memory located at the stored address (the `char` datatype
-is fundamentally just a 1-byte integer; more on this later).
 
 ## Dynamic memory
 
@@ -135,9 +143,13 @@ int main()
 
 We created a pointer, `int* p` as before, but this time, instead of the address
 of an existing value, we have assigned it to the return value of `malloc()`.
-`malloc()` creates a chunk of memory somewhere with the specified size (in this
-case, 4 byte -- the size of an `int`), and returns the location where the data
-was created. This scenario isn't all that different from before; it's a pointer
+`malloc()`, which stands for **m**emory **alloc**ate, accepts an argument
+describing a number of bytes. The operating system then provides that number of
+bytes to our program, and returns us the memory address of the beginning of our
+new block of bytes. In this case, we use the `sizeof()` macro to fetch the
+number of bytes in an `int`.
+
+This scenario isn't all that different from before; it's a pointer
 referring to an `int` somewhere in memory. There's one key difference, though:
 the `int` in this case has no name! It was created on the "heap" (a section of
 memory which holds dynamic data) during program execution, and does not have a
@@ -166,6 +178,10 @@ and the resulting memory:
 
 ![fig3](diagrams/fig3.svg)
 
+**Fig. 3:** *We `malloc()`'d an int, which was created at address `3944` in the
+heap. On the left, `p` points to our dynamic int. However, when we change `p` to
+point at `c`'s memory address, we lose track of the dynamic int (right)*
+
 We can see that the `malloc()`'d data still exists in the heap, but since we
 reassigned our pointer to the address of `c`, we no longer are able to find it!
 To prevent this, we can simply call `free()` on the pointer to free the memory
@@ -191,7 +207,7 @@ be repurposed for other things. Data on the stack (i.e. "regular" variables like
 contains the variable is handled in a predictable way in memory (discussed later
 in "[the stack](#the-stack)") and can be freed automatically.
 
-The utility of a single, dynamically allocated `int` is not apparent, since such
+The utility of a single, dynamically allocated `int` is limited, since such
 an object can simply be passed by value with minimal overhead, but this concept
 is a precursor to one of the most useful tools in all of programming: dynamic
 arrays. All data which goes on the "stack" (which stores all local variables,
@@ -226,7 +242,7 @@ int* my_array = malloc(user_input * sizeof(int));
 ``` 
 
 This works just fine! We have created an array by allocating 20 bytes (5 times
-4 bytes per `int`), and giving the address of the start of this region to the
+4 bytes per `int`), and given the address of the start of this region to the
 pointer. We access elements of this array the same way we usually index arrays:
 square brackets. It becomes clearer in this case, though, that square brackets
 are a syntactic shortcut for something a little more complex. When we allocate
@@ -239,8 +255,8 @@ square brackets like `my_array[4]`, this is actually shorthand for
 Several things are happening: first, we are "adding" 4 to our pointer. Pointer
 arithmetic is an entire subject to explore separately, but suffice it to say
 that when you add a number to a pointer, e.g. `ptr + 2`, the pointer interprets
-this as `ptr + 2*sizeof(type)`, where `type` is the type of the pointer, say,
-`int`. This means that when you add 2 to the pointer, you are not actually
+this as `ptr + 2*sizeof(type)`, where `type` is the type of the pointer, e.g. 
+`int`. This means that when you add `2` to the pointer, you are not actually
 adding two to its address, but rather adding 2 "`int`-sized jumps" to the
 address. This is convenient because when it comes to arrays, if we want to find
 the address of the *n*th element of the array, we can find it via
@@ -250,15 +266,17 @@ int* elem = my_array + n;
 ```
 
 This same mechanism is behind array accesses: when we write `(my_array + 4)`,
-we are finding the address of the 4th element of `my_array`. Dereferencing this
-value with `*(my_array + 4)` simply returns the data itself at that address, so
-we now see how this syntax is equivalent to `my_array[4]`. The latter syntax is
-much cleaner, but understanding the underlying mechanism allows you to be
-confident about what is happening when extending this behavior to dynamic
-arrays, which seemingly consist of a structureless chunk of memory, yet exhibit
-the same familiar array structure. Indeed, all arrays actually function this
-way, but the abstraction created by the square brackets syntax does an excellent
-job of concealing this for the case of arrays allocated on the stack.
+we are finding the address of the 4th element of `my_array`. `my_array` is a
+pointer, so the result of `my_array + 4` will also be a pointer, which we may
+dereference. Dereferencing `(my_array + 4)` with `*(my_array + 4)` simply
+returns the data itself at that address, so we now see how this syntax is
+equivalent to `my_array[4]`. The latter syntax is much cleaner, but
+understanding the underlying mechanism allows you to be confident about what is
+happening when extending this behavior to dynamic arrays, which seemingly
+consist of a structureless chunk of memory, yet exhibit the same familiar array
+behavior. Indeed, all arrays actually function this way, but the abstraction
+created by the square brackets syntax does an excellent job of concealing this
+for the case of arrays allocated on the stack.
 
 ## Double pointers
 
@@ -266,13 +284,13 @@ Double pointers are most people's worst enemy when writing C, but there is
 really no reason to find them confusing: they just add a second level of
 indirection on top of what we've already seen. This is best shown by example:
 
-Imaging we have an array, called `char* my_str`, which stores some number of
-characters. It turns out that the convenient "strings" most programming
-languages have handed you are nothing but pointers to arrays of ASCII characters
-(`char`), which are each one byte. If this is in any way confusing, remember
-that `char`s are nothing but 1-byte integers. Like all other data in a computer
-that behaves like anything other than an integer, `char` behave like characters
-simply we have defined a way to encode higher-order information in integers.
+Imagine we have an array, called `char* my_str`, which stores some number of
+characters. It turns out that the convenient "strings" of most programming
+languages are nothing but arrays of ASCII characters (`char`), which are each
+one byte. `char`s are nothing but 1-byte integers. Keep in mind that
+fundamentally, a byte is nothing more than an integer that can take on values
+from 0-255. All data in a computer that behaves like anything *other* than an
+integer is simply the result of abstraction built by the programmer.
 In this case, we've chosen to treat certain 1-byte integers as characters by
 calling them `char` and telling certain functions (like `printf()`) how to
 interpret them as characters.
@@ -296,6 +314,20 @@ the string had ended without also having an explicit length of the string as
 well. We say that strings are **null terminated**, which allows for a function
 to easily tell if it has reached the end of the string by checking for this
 character.
+
+This allows for the string to be iterated over with a loop such as this one:
+
+```c
+char* ptr = my_str; // create pointer which points to the beginning of our string
+
+while (*ptr != '\0') // as long as the character pointed to by ptr is not '\0'...
+{
+    // do something...
+
+    // Then move to the next character
+    ptr++;
+}
+```
 
 We can also initialize a string with a "string literal" using double quotes:
 
@@ -335,7 +367,7 @@ used to store a generic byte from memory, and has nothing to do with ASCII text.
 Sometimes, the `<stdint.h>` header will be used instead, allowing for the use of
 `uint8_t`, a 1-byte unsigned integer type which represents one byte of generic
 data. Using this datatype makes the code easier to read, since using `char` may
-confuse people into thinking that the program is operating on text when it
+confuse people into thinking that the program is operating on strings, when it
 really isn't. Underneath, though, it is the exact same thing; the definition of
 `uint8_t` is simply `typedef unsigned char  uint8_t;`, so understanding `char`
 leads to a generic understanding of how binary data is handled.
@@ -388,9 +420,9 @@ with an argument `char* left_off` like so:
 char* find_char(const char *str, char search_tgt, char* left_off);
 ```
 
-That's how you pass the location of data to a function, right? We frequently
-pass things to functions with pointers like this, but this situation is
-different. Let's say that we set up our function call like so:
+Typically, when you want a function to be able to modify data outside of its
+local scope, you pass it a pointer. However, this situation is different. Let's
+say that we set up our function call like so:
 
 ```c
 int main()
@@ -428,8 +460,8 @@ int main()
 ```
 
 `main()` contains several local variables, `a`, `c`, and `b`. These variables
-essentially constitute `main()`'s "scratchpad" which is what the programmer uses
-to organize the data needed by the program to do its job. This scratchpad, which
+essentially constitute `main()`'s "scratchpad" which is where the programmer 
+stores data needed by the function to do its job. This scratchpad, which
 we call "local memory" (as in, local to the function) needs to live somewhere in
 memory, so that we can keep track of this data.
 
@@ -455,7 +487,7 @@ stack in a **stack trace**, which typically looks something like this:
 
 ```
 Something bad happened: your program has crashed, silly you.
-    #0 in some_other_func() at other_stuff.c:<line number>
+    #0 in some_other_func() at other_stuff.c:417
     #1 in do_stuff() at do_stuff.c:341
     #2 in main() at main.c:6
 ```
@@ -464,25 +496,32 @@ this structure is a handy description of the stack at the time of the crash,
 and what it's describing is this:
 
 When we begin our program, the function `main()` is automatically called
-(`main()` is the entry point of the program). `main()` needs a chunk of memory
+(`main()` is the *entry point* of the program). `main()` needs a chunk of memory
 to perform its local operations. The compiler inspects the code upon compilation
 and determines that `main()` will need a stack frame of 12 bytes, 4 for each of
-the 3 local `int`s it uses. At the beginning of the program, our stack looks
-like this:
+the 3 local `int`s we used. At the beginning of the program, our stack creates a
+**stack frame** for `main()` with enough space to hold its local variables:
 
 
 ![fig4](diagrams/fig4.svg)
+
+**Fig. 4:** *`main()`'s stack frame. Since `main()` is the first function called
+by a program, its stack frame is always the first one placed on the stack, and
+persists until the program returns. In this case, our `main()` requires a stack
+frame that is 12 bytes long.*
 
 Note that although these diagrams are schematic, they are actually fairly
 representative of what happens in memory. There really is a location in address
 space that contains a contiguous chain of stack frames to encode this
 structure. The reason why this is such an effective method is that when we
 compile our program, the compiler can be absolutely certain about how much
-memory each function call will take by inspecting its local data, so we can
-use this fast and compact system to store their data, which also makes it easy
-to free the memory when the function returns. This is not the case with dynamic
-data which we get from `malloc()`, the size of which is not known when the
-program is compiled, and which may live for an arbitrary amount of time.
+memory each function call will take by inspecting its local data. 
+This allows us to use this fast and compact organization scheme to store data,
+which also makes it easy to free the memory when the function returns. This is
+not the case with dynamic data which we get from `malloc()`, the size of which
+is not known when the program is compiled, and which may live for an arbitrary
+amount of time. This is why dynamic memory must be manually freed by the
+programmer.
 
 Now we reach line 6 of our program above, and `main()` calls `do_stuff()`. Let's
 say that `do_stuff()` requires 16 bytes for its local data, so we create a
@@ -490,6 +529,8 @@ say that `do_stuff()` requires 16 bytes for its local data, so we create a
 on its local data as necessary, without interfering with `main()`'s data.
 
 ![fig5](diagrams/fig5.svg)
+
+**Fig. 5:** *
 
 Following our fake stack trace example, let's say `do_stuff()` calls another
 function, `some_other_func()`. Let's pretend this function needs 8 bytes of
